@@ -19,3 +19,116 @@
     @apply outline-2 outline-offset-2 outline-violet-500;
   }
 }
+
+/*
+ * Motion. Everything here is short (≤ 400ms) and switched off under
+ * prefers-reduced-motion at the bottom of the file.
+ */
+@theme {
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-fade-in: fade-in 300ms var(--ease-out-soft) both;
+  --animate-fade-up: fade-up 400ms var(--ease-out-soft) both;
+  --animate-pop-in: pop-in 300ms var(--ease-out-soft) both;
+  --animate-slide-down: slide-down 300ms var(--ease-out-soft) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+}
+
+@layer base {
+  /* Smooth hover and focus changes on every interactive element. */
+  a,
+  button,
+  label,
+  input,
+  select,
+  textarea,
+  summary {
+    transition-property:
+      color, background-color, border-color, box-shadow, opacity, filter, transform, translate,
+      scale;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-out-soft);
+  }
+  /* A small press-down on buttons and button-styled links. */
+  button:not(:disabled):active,
+  a[class*='rounded']:active {
+    transform: scale(0.97);
+  }
+}
+
+@utility stagger-* {
+  /* Delays an entrance animation by --value × 60ms, e.g. stagger-2. */
+  animation-delay: calc(--value(integer) * 60ms);
+}
+
+/* Route changes use the View Transitions API (see app.config.ts). */
+::view-transition-old(root) {
+  animation: 150ms ease-in both vt-out;
+}
+::view-transition-new(root) {
+  animation: 250ms var(--ease-out-soft) both vt-in;
+}
+/* The sticky header stays put while the page underneath changes. */
+::view-transition-group(site-header) {
+  animation: none;
+}
+/* A theme switch is a plain cross-fade. */
+:root.theme-switch::view-transition-old(root),
+:root.theme-switch::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-name: fade-in;
+}
+:root.theme-switch::view-transition-old(root) {
+  animation-direction: reverse;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Entrance effects and page slides go; colour fades and spinners stay. */
+  [class*='animate-fade'],
+  [class*='animate-pop'],
+  [class*='animate-slide'],
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  button:not(:disabled):active,
+  a[class*='rounded']:active {
+    transform: none;
+  }
+}

@@ -6,7 +6,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (offline()) {
-      <div role="status" class="bg-amber-500 px-4 py-2 text-center text-sm font-medium text-amber-950">
+      <div role="status" class="animate-slide-down bg-amber-500 px-4 py-2 text-center text-sm font-medium text-amber-950">
         You're offline. Downloads and uploads will resume when you reconnect.
       </div>
     }

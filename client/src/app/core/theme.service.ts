@@ -24,7 +24,20 @@ export class ThemeService {
   }
 
   toggle(): void {
-    this.theme.update((t) => (t === 'dark' ? 'light' : 'dark'));
+    const flip = () => this.theme.update((t) => (t === 'dark' ? 'light' : 'dark'));
+    const root = this.doc.documentElement;
+    const reduce = this.doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!this.doc.startViewTransition || reduce) {
+      flip();
+      return;
+    }
+    // Cross-fade between themes; the class is set inside the callback since the effect runs later.
+    root.classList.add('theme-switch');
+    const vt = this.doc.startViewTransition(() => {
+      flip();
+      root.classList.toggle('dark', this.theme() === 'dark');
+    });
+    vt.finished.finally(() => root.classList.remove('theme-switch'));
   }
 
   private initial(): Theme {

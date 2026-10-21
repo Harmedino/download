@@ -7,7 +7,7 @@ import { ThemeService } from '../core/theme.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterLinkActive],
   template: `
-    <header class="sticky top-0 z-30 border-b border-zinc-200/70 bg-white/80 backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/80">
+    <header style="view-transition-name: site-header" class="sticky top-0 z-30 border-b border-zinc-200/70 bg-white/80 backdrop-blur dark:border-zinc-800/70 dark:bg-zinc-950/80">
       <div class="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
         <a routerLink="/" class="mr-auto flex items-center gap-2 font-bold tracking-tight" aria-label="SnapGrab home">
           <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
