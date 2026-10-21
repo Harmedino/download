@@ -1,0 +1,248 @@
+<section class="mx-auto max-w-6xl px-4 pt-8 sm:pt-12">
+  <app-tool-header title="Video editor" subtitle="Trim, cut, merge, crop, resize, rotate, speed up, add text and colour-correct. Everything renders on our server with ffmpeg." />
+
+  @if (!clips().length) {
+    <div class="mx-auto mt-8 max-w-2xl">
+      <app-media-source [(file)]="firstSource" [fileId]="fileId()" />
+    </div>
+  } @else {
+    @let c = clip()!;
+    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <!-- Player, crop and timeline -->
+      <div class="min-w-0 space-y-4">
+        <div class="flex justify-center rounded-3xl bg-zinc-950 p-2">
+          <div class="relative max-h-[60vh] max-w-full" [style.aspect-ratio]="(c.file.info?.width ?? 16) + ' / ' + (c.file.info?.height ?? 9)">
+            <video
+              #playerEl
+              [src]="api.fileUrl(c.file.url, true)"
+              crossorigin="anonymous"
+              playsinline
+              preload="auto"
+              class="block h-full max-h-[60vh] w-full rounded-xl"
+              (loadedmetadata)="onLoaded()"
+              (play)="playing.set(true)"
+              (pause)="playing.set(false)"
+              (click)="togglePlay()"
+            ></video>
+            @if (cropOn() && sel() >= 0) {
+              <app-crop-box [(rect)]="crop" [ratio]="cropRatio()" [frameWidth]="c.file.info?.width ?? 16" [frameHeight]="c.file.info?.height ?? 9" />
+            }
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="togglePlay()" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900" [attr.aria-label]="playing() ? 'Pause' : 'Play'">
+            @if (playing()) {
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+            } @else {
+              <svg viewBox="0 0 24 24" class="ml-0.5 h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            }
+          </button>
+          <p class="truncate text-sm text-zinc-500 dark:text-zinc-400">
+            Clip {{ sel() + 1 }} of {{ clips().length }} · {{ c.file.name }}
+          </p>
+          <span class="ml-auto shrink-0 text-xs text-zinc-500 tabular-nums dark:text-zinc-400">Output ≈ {{ fmt(totalDuration()) }}</span>
+        </div>
+        <app-timeline
+          [duration]="c.file.info?.duration ?? 0"
+          [current]="currentTime()"
+          [start]="c.start"
+          (startChange)="updateClip({ start: $event })"
+          [end]="c.end"
+          (endChange)="updateClip({ end: $event })"
+          [cuts]="c.cuts"
+          (cutsChange)="updateClip({ cuts: $event })"
+          (seek)="seekTo($event)"
+        />
+
+        <div class="pt-2">
+          <h2 class="mb-2 text-sm font-medium">Preview of the final video</h2>
+          <app-composition-preview [video]="player()" [settings]="previewSettings()" [time]="outputTime()" />
+          <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">The preview follows the player. Colours are approximate; the export uses ffmpeg.</p>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <aside [class]="ui.card" aria-label="Edit settings">
+        <div class="grid grid-cols-5 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800" role="tablist">
+          @for (p of panels; track p.id) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="panel() === p.id"
+              (click)="panel.set(p.id)"
+              class="truncate rounded-lg px-1 py-1.5 text-xs font-medium"
+              [class]="panel() === p.id ? 'bg-white text-zinc-900 shadow dark:bg-zinc-950 dark:text-white' : 'text-zinc-600 dark:text-zinc-400'"
+            >
+              {{ p.label }}
+            </button>
+          }
+        </div>
+
+        @switch (panel()) {
+          @case ('frame') {
+            <fieldset>
+              <legend [class]="ui.label">Aspect ratio</legend>
+              <div class="grid grid-cols-3 gap-2">
+                @for (a of aspects; track a.id) {
+                  <button type="button" (click)="setAspect(a.id)" class="rounded-xl border px-2 py-2 text-left" [class]="aspect() === a.id ? ui.chipOn : ui.chipOff" [attr.aria-pressed]="aspect() === a.id">
+                    <span class="block text-sm font-semibold">{{ a.label }}</span>
+                    <span class="block truncate text-[11px] opacity-70">{{ a.hint }}</span>
+                  </button>
+                }
+              </div>
+            </fieldset>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" class="h-4 w-4 accent-violet-600" [checked]="cropOn()" (change)="cropOn.set($any($event.target).checked)" />
+              Crop (drag the box on the video{{ clips().length > 1 ? '; applies to every clip' : '' }})
+            </label>
+            @if (aspect() !== 'original' && !cropOn()) {
+              <fieldset>
+                <legend [class]="ui.label">Fit</legend>
+                <div class="flex flex-wrap gap-2">
+                  @for (f of [{ id: 'fill', label: 'Fill (crop centre)' }, { id: 'blur', label: 'Blurred bars' }, { id: 'black', label: 'Black bars' }]; track f.id) {
+                    <button type="button" (click)="fit.set($any(f.id))" [class]="ui.chip + ' ' + (fit() === f.id ? ui.chipOn : ui.chipOff)">{{ f.label }}</button>
+                  }
+                </div>
+              </fieldset>
+            }
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-sm font-medium">Rotate</span>
+              <button type="button" (click)="rotateBy(-90)" [class]="ui.chip + ' ' + ui.chipOff" aria-label="Rotate left">⟲ 90°</button>
+              <button type="button" (click)="rotateBy(90)" [class]="ui.chip + ' ' + ui.chipOff" aria-label="Rotate right">⟳ 90°</button>
+              <button type="button" (click)="flipH.set(!flipH())" [class]="ui.chip + ' ' + (flipH() ? ui.chipOn : ui.chipOff)" [attr.aria-pressed]="flipH()">Mirror</button>
+              <span class="text-xs text-zinc-500 tabular-nums">{{ rotate() }}°</span>
+            </div>
+            <label class="block">
+              <span [class]="ui.label">Resize</span>
+              <select [class]="ui.select" [value]="resolution()" (change)="resolution.set(num($event))">
+                <option value="0">Keep size</option>
+                @for (r of [2160, 1440, 1080, 720, 480, 360]; track r) {
+                  <option [value]="r">{{ r }}p</option>
+                }
+              </select>
+            </label>
+          }
+          @case ('adjust') {
+            <label class="block text-sm">
+              <span class="flex justify-between"><span>Speed</span><span class="tabular-nums text-zinc-500">{{ speed() }}×</span></span>
+              <input type="range" min="0.25" max="4" step="0.25" [value]="speed()" (input)="speed.set(num($event))" class="mt-2 w-full accent-violet-600" />
+            </label>
+            <label class="block text-sm">
+              <span class="flex justify-between"><span>Brightness</span><span class="tabular-nums text-zinc-500">{{ brightness() }}</span></span>
+              <input type="range" min="-0.5" max="0.5" step="0.05" [value]="brightness()" (input)="brightness.set(num($event))" class="mt-2 w-full accent-violet-600" />
+            </label>
+            <label class="block text-sm">
+              <span class="flex justify-between"><span>Contrast</span><span class="tabular-nums text-zinc-500">{{ contrast() }}</span></span>
+              <input type="range" min="0.5" max="2" step="0.05" [value]="contrast()" (input)="contrast.set(num($event))" class="mt-2 w-full accent-violet-600" />
+            </label>
+            <label class="block text-sm">
+              <span class="flex justify-between"><span>Saturation</span><span class="tabular-nums text-zinc-500">{{ saturation() }}</span></span>
+              <input type="range" min="0" max="3" step="0.05" [value]="saturation()" (input)="saturation.set(num($event))" class="mt-2 w-full accent-violet-600" />
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="block text-sm">
+                <span>Fade in (s)</span>
+                <input type="number" min="0" max="5" step="0.1" [value]="fadeIn()" (input)="fadeIn.set(num($event))" [class]="ui.select + ' mt-1'" />
+              </label>
+              <label class="block text-sm">
+                <span>Fade out (s)</span>
+                <input type="number" min="0" max="5" step="0.1" [value]="fadeOut()" (input)="fadeOut.set(num($event))" [class]="ui.select + ' mt-1'" />
+              </label>
+            </div>
+            <button type="button" (click)="resetAdjust()" class="text-sm text-zinc-500 underline">Reset</button>
+          }
+          @case ('text') {
+            <button type="button" (click)="addText()" [class]="ui.chip + ' ' + ui.chipOff + ' w-full'">+ Add text at {{ fmt(outputTime()) }}</button>
+            @for (t of texts(); track $index; let i = $index) {
+              <div class="space-y-2 rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-800/60">
+                <div class="flex gap-2">
+                  <input [value]="t.text" (input)="updateText(i, { text: $any($event.target).value })" maxlength="200" [class]="ui.select" aria-label="Text" />
+                  <button type="button" (click)="removeText(i)" class="shrink-0 rounded-lg px-2 text-xs text-zinc-500 hover:text-red-600">Remove</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                  <label>From (s)<input type="number" min="0" step="0.1" [value]="t.start" (input)="updateText(i, { start: num($event) })" [class]="ui.select + ' mt-1 h-9'" /></label>
+                  <label>To (s)<input type="number" min="0" step="0.1" [value]="t.end" (input)="updateText(i, { end: num($event) })" [class]="ui.select + ' mt-1 h-9'" /></label>
+                  <label>Left ↔ right<input type="range" min="0" max="1" step="0.01" [value]="t.x" (input)="updateText(i, { x: num($event) })" class="mt-1 w-full accent-violet-600" /></label>
+                  <label>Top ↕ bottom<input type="range" min="0" max="1" step="0.01" [value]="t.y" (input)="updateText(i, { y: num($event) })" class="mt-1 w-full accent-violet-600" /></label>
+                  <label>Size<input type="range" min="0.02" max="0.25" step="0.005" [value]="t.size" (input)="updateText(i, { size: num($event) })" class="mt-1 w-full accent-violet-600" /></label>
+                  <label class="flex items-center gap-2">Colour<input type="color" [value]="t.color" (input)="updateText(i, { color: $any($event.target).value })" class="h-8 w-10" /></label>
+                  <label>Font
+                    <select [value]="t.font" (change)="updateText(i, { font: $any($event.target).value })" [class]="ui.select + ' mt-1 h-9'">
+                      @for (f of fonts; track f.id) {
+                        <option [value]="f.id">{{ f.label }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="flex items-center gap-2"><input type="checkbox" [checked]="t.box" (change)="updateText(i, { box: $any($event.target).checked })" class="accent-violet-600" /> Background box</label>
+                </div>
+              </div>
+            } @empty {
+              <p class="text-sm text-zinc-500 dark:text-zinc-400">Titles, captions or labels. Times are on the exported video.</p>
+            }
+          }
+          @case ('clips') {
+            <ul class="space-y-2">
+              @for (k of clips(); track $index; let i = $index) {
+                <li class="flex items-center gap-2 rounded-xl border p-2 text-sm" [class]="i === sel() ? 'border-violet-500' : 'border-zinc-200 dark:border-zinc-800'">
+                  <button type="button" (click)="selectClip(i)" class="min-w-0 flex-1 text-left">
+                    <span class="block truncate font-medium">{{ i + 1 }}. {{ k.file.name }}</span>
+                    <span class="text-xs text-zinc-500">{{ fmt(k.start) }}–{{ fmt(k.end) }}{{ k.cuts.length ? ' · ' + k.cuts.length + ' cut(s)' : '' }}</span>
+                  </button>
+                  <button type="button" (click)="moveClip(i, -1)" [disabled]="i === 0" class="rounded px-1.5 disabled:opacity-30" aria-label="Move up">↑</button>
+                  <button type="button" (click)="moveClip(i, 1)" [disabled]="i === clips().length - 1" class="rounded px-1.5 disabled:opacity-30" aria-label="Move down">↓</button>
+                  <button type="button" (click)="removeClip(i)" class="rounded px-1.5 text-zinc-500 hover:text-red-600" aria-label="Remove clip">✕</button>
+                </li>
+              }
+            </ul>
+            @if (adding()) {
+              <app-media-source [(file)]="addSource" />
+              <button type="button" (click)="adding.set(false)" class="text-sm text-zinc-500 underline">Cancel</button>
+            } @else if (clips().length < 10) {
+              <button type="button" (click)="adding.set(true)" [class]="ui.chip + ' ' + ui.chipOff + ' w-full'">+ Add a clip to merge</button>
+            }
+            @if (clips().length > 1) {
+              <label class="block">
+                <span [class]="ui.label">Transition between clips</span>
+                <select [class]="ui.select" [value]="transition()" (change)="transition.set($any($event.target).value)">
+                  @for (t of transitions; track t.id) {
+                    <option [value]="t.id">{{ t.label }}</option>
+                  }
+                </select>
+              </label>
+              @if (transition() !== 'none') {
+                <label class="block text-sm">
+                  <span class="flex justify-between"><span>Transition length</span><span class="tabular-nums text-zinc-500">{{ transitionDuration() }} s</span></span>
+                  <input type="range" min="0.2" max="2" step="0.1" [value]="transitionDuration()" (input)="transitionDuration.set(num($event))" class="mt-2 w-full accent-violet-600" />
+                </label>
+              }
+              <p class="text-xs text-zinc-500 dark:text-zinc-400">Clips are fitted to the first clip's frame.</p>
+            }
+          }
+          @case ('export') {
+            <fieldset>
+              <legend [class]="ui.label">Format</legend>
+              <div class="flex flex-wrap gap-2">
+                @for (f of ['mp4', 'webm', 'mov', 'mkv']; track f) {
+                  <button type="button" (click)="format.set($any(f))" [class]="ui.chip + ' ' + (format() === f ? ui.chipOn : ui.chipOff)">{{ f.toUpperCase() }}</button>
+                }
+              </div>
+            </fieldset>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" class="h-4 w-4 accent-violet-600" [checked]="mute()" (change)="mute.set($any($event.target).checked)" />
+              Remove audio
+            </label>
+          }
+        }
+
+        <button type="button" [class]="ui.primary" [disabled]="job.busy()" (click)="exportVideo()">
+          @if (job.busy()) {
+            <app-spinner />
+          }
+          Export video ({{ fmt(totalDuration()) }})
+        </button>
+      </aside>
+    </div>
+
+    <div class="mt-6"><app-job-panel [tracker]="job" doneText="Done! Your edited video is ready." (retry)="exportVideo()" /></div>
+  }
+</section>

@@ -74,6 +74,7 @@ Besides the link downloader and Remove BG, the site has video tools that all fol
 
 | Tool | Path | Status |
 |------|------|--------|
+| Video Editor | `/editor` | Trim, cut sections, merge clips with transitions, crop (draggable, 16:9 / 9:16 / 1:1 / 4:5), resize, rotate, mirror, speed, brightness/contrast/saturation, fades, text overlays, live composition preview |
 | Video Converter | `/convert` | MP4, WebM, MOV, MKV, MP3, M4A, WAV; resolution and frame rate; lossless remux when possible |
 | Video Compressor | `/compress` | Quality levels or a target size in MB |
 

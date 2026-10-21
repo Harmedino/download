@@ -7,6 +7,7 @@ export const routes: Routes = [
   // Background removal is images only; keep old video links working.
   { path: 'remove-bg/video', redirectTo: 'remove-bg' },
   { path: 'tools', loadComponent: () => import('./pages/tools/tools').then((m) => m.Tools), title: 'All tools · SnapGrab' },
+  { path: 'editor', loadComponent: () => import('./pages/editor/editor').then((m) => m.Editor), title: 'Video editor · SnapGrab' },
   { path: 'convert', loadComponent: () => import('./pages/convert/convert').then((m) => m.Convert), title: 'Video converter · SnapGrab' },
   { path: 'compress', loadComponent: () => import('./pages/compress/compress').then((m) => m.Compress), title: 'Video compressor · SnapGrab' },
   { path: 'history', loadComponent: () => import('./pages/history/history').then((m) => m.History), title: 'History · SnapGrab' },
