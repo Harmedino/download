@@ -2,5 +2,5 @@
 // editing this file: scripts/set-env.mjs rewrites it before `npm run build`.
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://snapgrab-api.onrender.com',
+  apiBaseUrl: 'https://download-vmbd.onrender.com',
 };
