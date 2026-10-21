@@ -1,6 +1,6 @@
 # SnapGrab
 
-Paste a link from a public TikTok, Instagram, YouTube, Facebook, X/Twitter, Pinterest or Reddit post, preview it, and download the video or image. Background removal for images and short videos is coming in the next phases.
+Paste a link from a public TikTok, Instagram, YouTube, Facebook, X/Twitter, Pinterest or Reddit post, preview it, and download the video or image. You can also remove the background from an image (uploaded, or straight from a fetched post). Background removal works on images only.
 
 > Work in progress. Full setup and deployment docs land in phase 8.
 
@@ -60,9 +60,9 @@ Background removal loads a ~150 MB model and is CPU-heavy, so use an instance wi
 - Public posts only: SnapGrab never asks for or stores social media logins or cookies.
 - Links must be `http(s)` URLs on the seven supported platforms (allowlist; blocks SSRF to internal hosts). yt-dlp runs with its generic extractor disabled and gallery-dl ignores direct-link files, so a post can't point the server at an arbitrary URL.
 - yt-dlp, gallery-dl and ffmpeg are always spawned with argument arrays, never through a shell.
-- Rate limits (stored in MongoDB, shared by all instances): 20 fetches/min, 40 downloads/10 min, 20 image background removals/10 min and 4 video background removals/hour per IP. 429 responses include `Retry-After`.
-- Queue caps: at most 30 downloads, 20 image and 4 video background-removal jobs waiting or running at once; beyond that the API answers `503 SERVER_BUSY`.
-- Uploads: 50 MB, images or videos only, random filenames on disk. Videos over 60 s are rejected.
+- Rate limits (stored in MongoDB, shared by all instances): 20 fetches/min, 40 downloads/10 min, 20 background removals/10 min per IP. 429 responses include `Retry-After`.
+- Queue caps: at most 30 download and 20 background-removal jobs waiting or running at once; beyond that the API answers `503 SERVER_BUSY`.
+- Uploads: 50 MB, images only (JPG, PNG, WebP and similar), random filenames on disk.
 - Job and file ids are 96-bit random values, so download links can't be guessed. Files are deleted after 1 hour.
 - Helmet (CSP `default-src 'none'`), CORS limited to `CLIENT_ORIGIN`, 100 KB JSON body limit, no stack traces in responses.
 
