@@ -38,7 +38,7 @@ The two halves deploy separately:
 | `server/` (API) | Render or Railway, using `server/Dockerfile` | Needs ffmpeg, yt-dlp, gallery-dl, MongoDB and long-running jobs, which serverless platforms like Vercel can't provide |
 | Database | MongoDB Atlas | Free tier is enough to start |
 
-**Do not deploy `server/` to Vercel.** If a Vercel project builds `snapgrab-server`, change its Root Directory to `client` (or delete it).
+**Do not deploy `server/` to Vercel.** `server/vercel.json` turns off Git deployments for any Vercel project rooted at `server/`, so such projects stop posting failed checks on PRs. You can still delete them (or change their Root Directory to `client`).
 
 ### API on Render
 1. MongoDB Atlas: create a cluster and a database user, and under *Network Access* allow `0.0.0.0/0`. Copy the `mongodb+srv://` connection string.
