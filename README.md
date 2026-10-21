@@ -77,6 +77,12 @@ Besides the link downloader and Remove BG, the site has video tools that all fol
 | Video Editor | `/editor` | Trim, cut sections, merge clips with transitions, crop (draggable, 16:9 / 9:16 / 1:1 / 4:5), resize, rotate, mirror, speed, brightness/contrast/saturation, fades, text overlays, live composition preview |
 | Video Converter | `/convert` | MP4, WebM, MOV, MKV, MP3, M4A, WAV; resolution and frame rate; lossless remux when possible |
 | Video Compressor | `/compress` | Quality levels or a target size in MB |
+| Video to Shorts | `/shorts` | 9:16 at 1080×1920 or 720×1280 for YouTube Shorts, Reels or TikTok (length checked per platform); manual crop, "follow the subject", or the whole frame on a blurred background; optional caption |
+| Frame Extractor | `/frames` | Exact frames at full resolution, a frame every N seconds (with a ZIP), or a contact sheet; JPG, PNG or WebP |
+| Thumbnail Editor | `/thumbnail` | Crop (free or 16:9 / 9:16 / 1:1 / 4:5), brightness, contrast, saturation, sharpen, outlined text; opens frames straight from the Frame Extractor |
+| GIF Maker | `/gif` | GIF (palette-optimised) or animated WebP, up to 30 s, with width, frame rate, speed and crop |
+
+"Follow the subject" samples frames and scores them with libvips' attention strategy (skin tones, saturated colour and detail), then smooths the path so the crop pans gently. It is a saliency heuristic, not face recognition, so manual framing is always available.
 
 Direct links: links that are not on a supported platform are accepted when they point straight at a public media file (`.mp4`, `.mov`, `.mp3`, ...). Streaming services that use DRM or subscriptions (Netflix, Disney+, Prime Video, Spotify, ...) are refused with an explanation.
 
