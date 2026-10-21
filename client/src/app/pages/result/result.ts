@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { ApiError } from '../../core/errors';
 import { formatBytes, formatDuration } from '../../core/format';
@@ -25,6 +25,7 @@ export class Result {
   private readonly mediaState = inject(MediaStateService);
   private readonly history = inject(HistoryService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   /** Bound from the `?url=` query param (withComponentInputBinding), so reloads and shared links work. */
   readonly url = input<string>('');
@@ -38,12 +39,17 @@ export class Result {
 
   protected readonly main = new JobTracker(this.api);
   protected readonly zip = new JobTracker(this.api);
+  /** Downloads an image to the server, then opens it in the background remover. */
+  protected readonly toRemoveBg = new JobTracker(this.api);
+  protected readonly removeBgIndex = signal<number | null>(null);
   private readonly itemTrackers = new Map<number, JobTracker>();
 
   protected readonly meta = computed(() => this.data()?.metadata ?? null);
   protected readonly platformName = computed(() => (this.data() ? PLATFORM_NAMES[this.data()!.platform] : ''));
   protected readonly isCarousel = computed(() => (this.meta()?.items.length ?? 0) > 1);
   protected readonly isVideo = computed(() => this.meta()?.kind === 'video');
+  /** Video background removal is limited to short clips. */
+  protected readonly canRemoveVideoBg = computed(() => this.isVideo() && (this.meta()?.duration ?? Infinity) <= 60.5);
   protected readonly selectedFormat = computed(() => this.meta()?.formats.find((f) => f.id === this.quality()) ?? null);
   protected readonly displaySize = computed(() => {
     if (this.audioOnly()) return '';
@@ -61,6 +67,7 @@ export class Result {
     this.destroyRef.onDestroy(() => {
       this.main.cancel();
       this.zip.cancel();
+      this.toRemoveBg.cancel();
       this.itemTrackers.forEach((t) => t.cancel());
     });
   }
@@ -141,6 +148,26 @@ export class Result {
     const d = this.data();
     if (!d) return;
     this.zip.run(this.api.startZip(d.sourceUrl), (job) => this.finish(job, d.metadata.thumbnail));
+  }
+
+  protected removeBackground(index: number): void {
+    const d = this.data();
+    if (!d) return;
+    this.removeBgIndex.set(index);
+    this.toRemoveBg.run(
+      // Videos are fetched at 720p (or the best below it): plenty for background removal and much faster to process.
+      this.api.startDownload({
+        url: d.sourceUrl,
+        itemIndex: this.isCarousel() ? index : undefined,
+        formatId: !this.isCarousel() && d.metadata.formats.some((f) => f.id === '720p') ? '720p' : undefined,
+      }),
+      (job) => {
+        const f = job.files[0];
+        if (!f) return;
+        const page = f.mimeType.startsWith('video/') ? '/remove-bg/video' : '/remove-bg';
+        void this.router.navigate([page], { queryParams: { fileId: f.id, name: f.name } });
+      },
+    );
   }
 
   private finish(job: JobView, thumbnail: string | null): void {

@@ -6,6 +6,8 @@ import { logger } from '../logger.js';
 import type { JobType } from '../models/Job.js';
 import { processCleanup } from './processors/cleanup.js';
 import { processDownload } from './processors/download.js';
+import { processRemoveBgImage } from './processors/removeBgImage.js';
+import { processRemoveBgVideo } from './processors/removeBgVideo.js';
 
 export type QueueName = Exclude<JobType, 'fetch'> | 'cleanup-files';
 
@@ -24,6 +26,9 @@ export async function startAgenda(): Promise<Agenda> {
   });
 
   agenda.define('download', processDownload, { concurrency: 3, removeOnComplete: true });
+  agenda.define('remove-bg-image', processRemoveBgImage, { concurrency: 2, removeOnComplete: true });
+  // CPU-bound: one video at a time; the processor touches the lock as frames complete.
+  agenda.define('remove-bg-video', processRemoveBgVideo, { concurrency: 1, lockLifetime: 10 * 60_000, removeOnComplete: true });
   agenda.define('cleanup-files', processCleanup, { concurrency: 1 });
 
   agenda.on('error', (err: unknown) => logger.error({ err }, 'Agenda error'));

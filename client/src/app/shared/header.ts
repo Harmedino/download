@@ -23,7 +23,7 @@ import { ThemeService } from '../core/theme.service';
               [routerLink]="l.path"
               routerLinkActive="bg-zinc-200/70 text-zinc-900 dark:bg-zinc-800 dark:text-white"
               [routerLinkActiveOptions]="{ exact: l.path === '/' }"
-              class="rounded-lg px-2.5 py-1.5 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+              class="rounded-lg px-2 py-1.5 whitespace-nowrap text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
             >
               {{ l.label }}
             </a>
@@ -54,5 +54,6 @@ export class Header {
   protected readonly theme = inject(ThemeService);
   protected readonly links = [
     { path: '/', label: 'Download' },
+    { path: '/remove-bg', label: 'Remove BG' },
   ];
 }
