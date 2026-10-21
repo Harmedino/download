@@ -4,6 +4,7 @@ import { connectMongo, disconnectMongo } from './db/mongoose.js';
 import { checkBinaries } from './services/binaries.js';
 import { createApp } from './app.js';
 import { startAgenda, stopAgenda } from './jobs/agenda.js';
+import { ensureRateLimitIndexes } from './middleware/rateLimit.js';
 import { ensureStorageDirs } from './services/storage.js';
 
 async function main() {
@@ -26,6 +27,7 @@ async function main() {
     );
     process.exit(1);
   }
+  await ensureRateLimitIndexes();
   await startAgenda();
 
   const server = createApp().listen(env.PORT, () => {

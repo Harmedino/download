@@ -10,7 +10,7 @@ healthRouter.get('/', (_req, res) => {
   const binaries = Object.fromEntries(
     names.map((n) => {
       const s = binaryStatus(n);
-      return [n, s ? { available: s.available, version: s.version ?? null } : { available: false, version: null }];
+      return [n, { available: !!s?.available }];
     }),
   );
   const ok = mongo === 'connected';

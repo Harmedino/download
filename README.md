@@ -55,6 +55,17 @@ Background removal loads a ~150 MB model and is CPU-heavy, so use an instance wi
 2. **Environment variable:** `API_BASE_URL` = your API URL, e.g. `https://snapgrab-api.onrender.com`.
 3. Deploy, then make sure that URL is in the API's `CLIENT_ORIGIN`.
 
+## Security and limits
+
+- Public posts only: SnapGrab never asks for or stores social media logins or cookies.
+- Links must be `http(s)` URLs on the seven supported platforms (allowlist; blocks SSRF to internal hosts). yt-dlp runs with its generic extractor disabled and gallery-dl ignores direct-link files, so a post can't point the server at an arbitrary URL.
+- yt-dlp, gallery-dl and ffmpeg are always spawned with argument arrays, never through a shell.
+- Rate limits (stored in MongoDB, shared by all instances): 20 fetches/min, 40 downloads/10 min, 20 image background removals/10 min and 4 video background removals/hour per IP. 429 responses include `Retry-After`.
+- Queue caps: at most 30 downloads, 20 image and 4 video background-removal jobs waiting or running at once; beyond that the API answers `503 SERVER_BUSY`.
+- Uploads: 50 MB, images or videos only, random filenames on disk. Videos over 60 s are rejected.
+- Job and file ids are 96-bit random values, so download links can't be guessed. Files are deleted after 1 hour.
+- Helmet (CSP `default-src 'none'`), CORS limited to `CLIENT_ORIGIN`, 100 KB JSON body limit, no stack traces in responses.
+
 ## Tests
 
 ```bash

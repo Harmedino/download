@@ -21,6 +21,8 @@ export function baseArgs(): string[] {
     '--no-cache-dir',
     '--color', 'never',
     '--socket-timeout', '20',
+    // Only platform extractors: the generic one would fetch whatever URL a post links to (SSRF).
+    '--use-extractors', 'default,-generic',
     // YouTube needs a JS runtime; reuse the Node binary we are already running on.
     '--js-runtimes', `node:${process.execPath}`,
   ];
@@ -35,7 +37,7 @@ export function mapExtractorError(stderr: string): AppError {
 
   if (test('private', 'login required', 'log in', 'sign in to confirm', 'requires authentication', 'cookies', 'age-restricted', 'inappropriate for some users', 'not authorized'))
     return new AppError(403, 'PRIVATE_POST', "This post is private or requires a login, so it can't be downloaded. Only public posts are supported.");
-  if (test('unsupported url'))
+  if (test('unsupported url', 'no suitable extractor'))
     return new AppError(400, 'UNSUPPORTED_URL', "We couldn't find any media at that link. Make sure it points to a single post or video.");
   if (test('file is larger than max-filesize', 'larger than max-filesize'))
     return new AppError(413, 'FILE_TOO_LARGE', `That file is larger than the ${env.MAX_DOWNLOAD_MB} MB limit.`);

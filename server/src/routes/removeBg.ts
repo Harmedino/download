@@ -6,6 +6,8 @@ import type { RemoveBgParams } from '../jobs/processors/removeBgImage.js';
 import type { RemoveBgVideoParams } from '../jobs/processors/removeBgVideo.js';
 import { assertDurationAllowed, probeVideo } from '../services/videoBg.js';
 import { AppError } from '../middleware/errors.js';
+import { assertQueueCapacity } from '../middleware/queueGuard.js';
+import { limits } from '../middleware/rateLimit.js';
 import { uploadErrors, uploadFor } from '../middleware/upload.js';
 import { assertObjectId, parseBody } from '../middleware/validate.js';
 import { FileModel } from '../models/File.js';
@@ -13,6 +15,8 @@ import { Job } from '../models/Job.js';
 import { isInsideTempDir, registerFile } from '../services/storage.js';
 
 export const removeBgRouter = Router();
+const imageLimit = limits.removeBgImage();
+const videoLimit = limits.removeBgVideo();
 
 const optionsSchema = z.object({
   fileId: z.string().optional(),
@@ -68,7 +72,7 @@ async function resolveInput(req: Request, kind: 'image' | 'video') {
   }
 }
 
-removeBgRouter.post('/image', uploadFor('image'), async (req, res) => {
+removeBgRouter.post('/image', imageLimit, uploadFor('image'), async (req, res) => {
   const { inputPath, inputName, body, bgImagePath } = await resolveInput(req, 'image');
   const params: RemoveBgParams = {
     inputPath,
@@ -78,12 +82,16 @@ removeBgRouter.post('/image', uploadFor('image'), async (req, res) => {
     blur: body.blur,
     bgImagePath,
   };
+  await assertQueueCapacity('remove-bg-image').catch(async (err) => {
+    await fsp.rm(inputPath, { force: true }).catch(() => undefined);
+    throw err;
+  });
   const job = await Job.create({ type: 'remove-bg-image', params });
   await enqueue('remove-bg-image', job._id);
   res.status(202).json({ jobId: job._id });
 });
 
-removeBgRouter.post('/video', uploadFor('video'), async (req, res) => {
+removeBgRouter.post('/video', videoLimit, uploadFor('video'), async (req, res) => {
   const { inputPath, inputName, body, bgImagePath } = await resolveInput(req, 'video');
   const uploaded = !!(req.files as UploadedFiles | undefined)?.['file']?.[0];
   try {
@@ -92,6 +100,7 @@ removeBgRouter.post('/video', uploadFor('video'), async (req, res) => {
     }
     // Probe now so an over-long clip is rejected immediately instead of after queueing.
     assertDurationAllowed(await probeVideo(inputPath));
+    await assertQueueCapacity('remove-bg-video');
   } catch (err) {
     if (uploaded) await fsp.rm(inputPath, { force: true });
     if (bgImagePath) await fsp.rm(bgImagePath, { force: true });

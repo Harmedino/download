@@ -5,6 +5,8 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly status = 0,
+    /** Seconds the server asked us to wait (429 / 503), when known. */
+    readonly retryAfter: number | null = null,
   ) {
     super(message);
   }
@@ -42,21 +44,55 @@ const FRIENDLY: Record<string, FriendlyText> = {
   BINARY_MISSING: { title: 'Server is missing a tool', hint: 'The server is not fully set up yet. Please contact the site owner.' },
   DB_UNAVAILABLE: { title: 'Service temporarily unavailable', hint: 'Please try again in a moment.' },
   NETWORK: { title: "Can't reach SnapGrab", hint: 'Check your internet connection, or the server may be down.' },
+  OFFLINE: { title: "You're offline", hint: 'Reconnect to the internet and try again.' },
+  SERVER_BUSY: { title: 'SnapGrab is busy right now', hint: 'Lots of people are processing files. Please try again in a few minutes.' },
+  INVALID_VIDEO: { title: "We couldn't open that video", hint: 'The file may be damaged. Try an MP4, WebM or MOV.' },
+  NOT_A_CAROUSEL: { title: 'Nothing to zip', hint: 'This post has a single item; use the normal download.' },
+  INVALID_ITEM: { title: 'That item is no longer in the post', hint: 'Fetch the link again and retry.' },
+  BODY_TOO_LARGE: { title: 'Request too large', hint: 'Please try again with a shorter link.' },
+  INVALID_JSON: { title: 'Something went wrong', hint: 'Please refresh the page and try again.' },
 };
+
+/** Codes where the server's own message is more specific than our generic copy. */
+const USE_SERVER_HINT = new Set(['RATE_LIMITED', 'SERVER_BUSY', 'VIDEO_TOO_LONG', 'FILE_TOO_LARGE']);
+
+export function waitText(seconds: number): string {
+  if (seconds < 90) return `${Math.max(1, Math.round(seconds))} seconds`;
+  return `${Math.round(seconds / 60)} minutes`;
+}
 
 export function friendly(err: ApiError | null | undefined): FriendlyText | null {
   if (!err) return null;
-  return FRIENDLY[err.code] ?? { title: 'Something went wrong', hint: err.message };
+  const base = FRIENDLY[err.code] ?? { title: 'Something went wrong', hint: err.message };
+  // Client-side errors carry placeholder messages; only server messages (status > 0) are worth showing.
+  let hint = USE_SERVER_HINT.has(err.code) && err.status > 0 && err.message ? err.message : base.hint;
+  if (err.retryAfter && (err.code === 'RATE_LIMITED' || err.code === 'SERVER_BUSY')) {
+    hint = `${hint ?? ''} You can try again in about ${waitText(err.retryAfter)}.`.trim();
+  }
+  return { title: base.title, hint };
+}
+
+function retryAfterOf(err: HttpErrorResponse): number | null {
+  const fromBody = err.error?.error?.details?.retryAfterSeconds;
+  if (typeof fromBody === 'number') return fromBody;
+  const header = Number(err.headers?.get('Retry-After'));
+  return Number.isFinite(header) && header > 0 ? header : null;
 }
 
 export function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) return err;
   if (err instanceof HttpErrorResponse) {
-    if (err.status === 0) return new ApiError('NETWORK', "Can't reach the server.", 0);
+    if (err.status === 0) {
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      return new ApiError(offline ? 'OFFLINE' : 'NETWORK', "Can't reach the server.", 0);
+    }
     const body = err.error?.error;
-    if (body?.code) return new ApiError(body.code, body.message ?? err.message, err.status);
+    const retry = retryAfterOf(err);
+    if (body?.code) return new ApiError(body.code, body.message ?? err.message, err.status, retry);
+    // Proxies (e.g. Render's edge) can reject uploads before they reach the API.
     if (err.status === 413) return new ApiError('UPLOAD_TOO_LARGE', 'File too large', 413);
-    if (err.status === 429) return new ApiError('RATE_LIMITED', 'Too many requests', 429);
+    if (err.status === 429) return new ApiError('RATE_LIMITED', '', 429, retry);
+    if (err.status === 502 || err.status === 503 || err.status === 504) return new ApiError('DB_UNAVAILABLE', '', err.status, retry);
     return new ApiError('HTTP_' + err.status, err.message, err.status);
   }
   return new ApiError('UNKNOWN', (err as Error)?.message ?? 'Unknown error');
