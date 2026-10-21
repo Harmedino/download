@@ -1,7 +1,7 @@
 <section class="mx-auto max-w-5xl px-4 pt-8 sm:pt-12">
   <div class="text-center">
-    <h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl">Remove image background</h1>
-    <p class="mx-auto mt-2 max-w-xl text-zinc-600 dark:text-zinc-400">
+    <h1 class="animate-fade-up text-3xl font-extrabold tracking-tight sm:text-4xl">Remove image background</h1>
+    <p class="animate-fade-up stagger-1 mx-auto mt-2 max-w-xl text-zinc-600 dark:text-zinc-400">
       Runs on our server with an open-source model; no paid API. Then pick a transparent, colored, blurred or custom background.
     </p>
   </div>
@@ -9,7 +9,7 @@
   @if (!source()) {
     <label
       for="image-input"
-      class="mx-auto mt-8 flex max-w-2xl cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-16 text-center transition"
+      class="animate-fade-up stagger-2 mx-auto mt-8 flex max-w-2xl cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed px-6 py-16 text-center transition"
       [class]="dragging() ? 'border-violet-500 bg-violet-500/10' : 'border-zinc-300 hover:border-violet-400 dark:border-zinc-700'"
       (dragover)="$event.preventDefault(); dragging.set(true)"
       (dragleave)="dragging.set(false)"
@@ -31,7 +31,7 @@
       <div class="mx-auto mt-4 max-w-2xl"><app-error-banner [error]="error()" /></div>
     }
   } @else {
-    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="animate-fade-up mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div>
         <app-compare-slider [before]="source()!.url" [after]="preview()" [ratio]="ratio()" />
         @if (working()) {

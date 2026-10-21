@@ -18,7 +18,7 @@
       <app-error-banner [error]="loadError()" [retryable]="true" (retry)="retryLoad()" />
     </div>
   } @else if (meta(); as m) {
-    <div class="mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
+    <div class="animate-fade-up mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
       <!-- Preview -->
       <div class="relative mx-auto w-full overflow-hidden rounded-3xl bg-zinc-200 dark:bg-zinc-900" [class]="m.portrait ? 'aspect-[9/16] max-h-[70vh] max-w-sm' : 'aspect-video'">
         @if (m.thumbnail) {
@@ -157,6 +157,30 @@
                 <app-error-banner [error]="toTool.error()" />
               </div>
             }
+            @if (audioOnly()) {
+              @if (playerSrc(); as src) {
+                <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-900">
+                  <p class="mb-2 truncate text-sm font-medium">Now playing: {{ m.title }}</p>
+                  <audio [src]="src" controls autoplay preload="auto" class="w-full" aria-label="Audio player"></audio>
+                </div>
+              } @else {
+                <button
+                  type="button"
+                  (click)="listenHere()"
+                  [disabled]="listen.busy() || main.busy()"
+                  class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 font-semibold hover:border-violet-500 disabled:opacity-60 dark:border-zinc-700"
+                >
+                  @if (listen.busy()) {
+                    <app-spinner />
+                    <span>Getting audio… {{ listen.progress() }}%</span>
+                  } @else {
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                    <span>Play here</span>
+                  }
+                </button>
+                <app-error-banner [error]="listen.error()" [retryable]="true" (retry)="listenHere()" />
+              }
+            }
             @if (m.kind === 'image') {
               <button
                 type="button"
@@ -213,7 +237,7 @@
         <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           @for (item of m.items; track item.index) {
             @let t = tracker(item.index);
-            <li class="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+            <li class="animate-pop-in overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900" [style.animation-delay.ms]="$index < 12 ? $index * 40 : 0">
               <div class="relative aspect-square bg-zinc-200 dark:bg-zinc-800">
                 @if (item.thumbnail) {
                   <img [src]="item.thumbnail" [alt]="'Item ' + (item.index + 1)" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />

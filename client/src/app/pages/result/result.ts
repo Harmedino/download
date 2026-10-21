@@ -46,6 +46,10 @@ export class Result {
   /** Downloads an image to the server, then opens it in the background remover (images only). */
   protected readonly toRemoveBg = new JobTracker(this.api);
   protected readonly removeBgIndex = signal<number | null>(null);
+  /** Fetches the MP3 to play in the page instead of saving it. */
+  protected readonly listen = new JobTracker(this.api);
+  /** Inline URL of the fetched MP3, shown in the audio player. */
+  protected readonly playerSrc = signal<string | null>(null);
   private readonly itemTrackers = new Map<number, JobTracker>();
 
   protected readonly meta = computed(() => this.data()?.metadata ?? null);
@@ -89,6 +93,7 @@ export class Result {
       this.zip.cancel();
       this.toRemoveBg.cancel();
       this.toTool.cancel();
+      this.listen.cancel();
       this.itemTrackers.forEach((t) => t.cancel());
     });
   }
@@ -123,6 +128,7 @@ export class Result {
 
   private setData(res: FetchResponse): void {
     this.data.set(res);
+    this.playerSrc.set(null);
     const formats = res.metadata.formats;
     // Default to 720p when available: a good balance of size and quality on phones.
     this.quality.set(formats.find((f) => f.id === '720p')?.id ?? formats.at(-1)?.id ?? null);
@@ -154,8 +160,23 @@ export class Result {
         formatId: audio ? undefined : (this.quality() ?? undefined),
         audioOnly: audio || undefined,
       }),
-      (job) => this.finish(job, d.metadata.thumbnail),
+      (job) => {
+        this.finish(job, d.metadata.thumbnail);
+        if (audio) this.play(job);
+      },
     );
+  }
+
+  /** Fetches the MP3 and plays it in the page, without saving it. */
+  protected listenHere(): void {
+    const d = this.data();
+    if (!d) return;
+    this.listen.run(this.api.startDownload({ url: d.sourceUrl, audioOnly: true }), (job) => this.play(job));
+  }
+
+  private play(job: JobView): void {
+    const f = job.files[0];
+    if (f?.mimeType.startsWith('audio/')) this.playerSrc.set(this.api.fileUrl(f.url, true));
   }
 
   protected downloadItem(item: MediaItem): void {

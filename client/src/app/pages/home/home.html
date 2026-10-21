@@ -1,18 +1,18 @@
 <section class="mx-auto max-w-3xl px-4 pt-10 sm:pt-16">
   <div class="text-center">
-    <h1 class="text-3xl font-extrabold tracking-tight sm:text-5xl">
+    <h1 class="animate-fade-up text-3xl font-extrabold tracking-tight sm:text-5xl">
       Grab any public post.
       <span class="bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent">Instantly.</span>
     </h1>
-    <p class="mx-auto mt-3 max-w-xl text-zinc-600 dark:text-zinc-400">
+    <p class="animate-fade-up stagger-1 mx-auto mt-3 max-w-xl text-zinc-600 dark:text-zinc-400">
       Paste a link from YouTube, TikTok, Instagram, Facebook, X, Vimeo, SoundCloud and more, or a direct link to a media file, to preview and download it. Then edit it with the <a routerLink="/tools" class="font-medium text-violet-600 underline dark:text-violet-300">video tools</a>.
     </p>
   </div>
 
-  <form class="mt-8" (submit)="$event.preventDefault(); submit()" novalidate>
+  <form class="animate-fade-up stagger-2 mt-8" (submit)="$event.preventDefault(); submit()" novalidate>
     <label for="link" class="sr-only">Post link</label>
     <div
-      class="flex flex-col gap-2 rounded-3xl border border-zinc-200 bg-white p-2 shadow-xl shadow-violet-500/5 focus-within:border-violet-500 sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900"
+      class="flex flex-col gap-2 rounded-3xl border border-zinc-200 bg-white p-2 shadow-xl shadow-violet-500/5 transition-[border-color,box-shadow] duration-200 focus-within:border-violet-500 focus-within:shadow-violet-500/15 sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div class="flex min-w-0 flex-1 items-center gap-3 pl-2">
         <app-platform-icon [platform]="platform()" [size]="40" />
@@ -44,7 +44,7 @@
       <button
         type="submit"
         [disabled]="!canSubmit()"
-        class="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 text-base font-semibold text-white shadow-lg shadow-fuchsia-600/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        class="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 text-base font-semibold text-white shadow-lg shadow-fuchsia-600/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:brightness-110 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
       >
         @if (loading()) {
           <app-spinner />
@@ -69,9 +69,9 @@
     </div>
   }
 
-  <ul class="mt-6 flex flex-wrap justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400" aria-label="Supported platforms">
+  <ul class="animate-fade-in stagger-3 mt-6 flex flex-wrap justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400" aria-label="Supported platforms">
     @for (p of platforms; track p) {
-      <li class="rounded-full border border-zinc-200 px-3 py-1 dark:border-zinc-800">{{ p }}</li>
+      <li class="rounded-full border border-zinc-200 px-3 py-1 transition-colors hover:border-violet-400 hover:text-violet-600 dark:border-zinc-800 dark:hover:text-violet-300">{{ p }}</li>
     }
   </ul>
 </section>
@@ -79,7 +79,7 @@
 <app-ad-slot placement="home" class="mt-10" />
 
 @if (history.count() > 0) {
-  <section class="mx-auto mt-14 max-w-3xl px-4" aria-labelledby="recent-heading">
+  <section class="animate-fade-up mx-auto mt-14 max-w-3xl px-4" aria-labelledby="recent-heading">
     <div class="mb-3 flex items-center justify-between">
       <h2 id="recent-heading" class="text-lg font-semibold">Recent downloads</h2>
       <button type="button" class="text-sm text-zinc-500 hover:text-red-500 dark:text-zinc-400" (click)="history.clear()">Clear</button>
@@ -87,7 +87,7 @@
     <p class="mb-3 text-xs text-zinc-500 dark:text-zinc-400">Stored only in this browser. Files stay on our server for 1 hour.</p>
     <ul class="divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
       @for (e of history.entries(); track e.id) {
-        <li class="flex items-center gap-3 p-3">
+        <li class="animate-fade-in flex items-center gap-3 p-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
           <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800">
             @if (e.thumbnail) {
               <img [src]="e.thumbnail" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
