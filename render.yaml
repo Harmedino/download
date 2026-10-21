@@ -16,5 +16,3 @@ services:
         sync: false # e.g. https://your-app.vercel.app (comma-separate several)
       - key: MAX_UPLOAD_MB
         value: "50"
-      - key: VIDEO_BG_FPS
-        value: "12"

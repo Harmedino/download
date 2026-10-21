@@ -40,7 +40,7 @@ export class Result {
 
   protected readonly main = new JobTracker(this.api);
   protected readonly zip = new JobTracker(this.api);
-  /** Downloads an image to the server, then opens it in the background remover. */
+  /** Downloads an image to the server, then opens it in the background remover (images only). */
   protected readonly toRemoveBg = new JobTracker(this.api);
   protected readonly removeBgIndex = signal<number | null>(null);
   private readonly itemTrackers = new Map<number, JobTracker>();
@@ -49,8 +49,6 @@ export class Result {
   protected readonly platformName = computed(() => (this.data() ? PLATFORM_NAMES[this.data()!.platform] : ''));
   protected readonly isCarousel = computed(() => (this.meta()?.items.length ?? 0) > 1);
   protected readonly isVideo = computed(() => this.meta()?.kind === 'video');
-  /** Video background removal is limited to short clips. */
-  protected readonly canRemoveVideoBg = computed(() => this.isVideo() && (this.meta()?.duration ?? Infinity) <= 60.5);
   protected readonly selectedFormat = computed(() => this.meta()?.formats.find((f) => f.id === this.quality()) ?? null);
   protected readonly displaySize = computed(() => {
     if (this.audioOnly()) return '';
@@ -156,17 +154,11 @@ export class Result {
     if (!d) return;
     this.removeBgIndex.set(index);
     this.toRemoveBg.run(
-      // Videos are fetched at 720p (or the best below it): plenty for background removal and much faster to process.
-      this.api.startDownload({
-        url: d.sourceUrl,
-        itemIndex: this.isCarousel() ? index : undefined,
-        formatId: !this.isCarousel() && d.metadata.formats.some((f) => f.id === '720p') ? '720p' : undefined,
-      }),
+      this.api.startDownload({ url: d.sourceUrl, itemIndex: this.isCarousel() ? index : undefined }),
       (job) => {
         const f = job.files[0];
-        if (!f) return;
-        const page = f.mimeType.startsWith('video/') ? '/remove-bg/video' : '/remove-bg';
-        void this.router.navigate([page], { queryParams: { fileId: f.id, name: f.name } });
+        if (!f?.mimeType.startsWith('image/')) return;
+        void this.router.navigate(['/remove-bg'], { queryParams: { fileId: f.id, name: f.name } });
       },
     );
   }
