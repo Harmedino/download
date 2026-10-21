@@ -191,6 +191,9 @@ export async function ytdlpFetch(url: string): Promise<MediaMetadata> {
  * yt-dlp format selector for a preset. Portrait videos are limited by width so
  * "720p" means the short side, matching how buildFormatOptions labels them.
  */
+/** yt-dlp sort order: highest resolution first, then the most widely playable codecs. */
+export const COMPAT_SORT = 'res,vcodec:h264,acodec:aac';
+
 export function formatSelector(preset: QualityPreset | undefined, portrait: boolean): string {
   if (!preset || preset === 'best') return 'bv*+ba/b';
   const h = PRESET_HEIGHTS.find(([p]) => p === preset)?.[1];
@@ -244,7 +247,8 @@ export async function ytdlpDownload(o: YtdlpDownloadOptions): Promise<void> {
   if (o.audioOnly) {
     args.push('-f', 'ba/b', '-x', '--audio-format', 'mp3', '--audio-quality', '0');
   } else {
-    args.push('-f', formatSelector(o.preset, !!o.portrait), '--merge-output-format', 'mp4');
+    // At equal resolution prefer H.264 + AAC: VP9/AV1 video and Opus audio in MP4 won't play on iPhone, QuickTime or many TVs.
+    args.push('-f', formatSelector(o.preset, !!o.portrait), '-S', COMPAT_SORT, '--merge-output-format', 'mp4');
   }
   if (o.allItems) args.push('--yes-playlist', '--playlist-items', '1:50');
   else if (o.itemIndex !== undefined) args.push('--yes-playlist', '--playlist-items', String(o.itemIndex + 1));
