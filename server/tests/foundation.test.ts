@@ -93,7 +93,7 @@ describe('SSRF protection', () => {
       // A hostname (not an IP literal) so the DNS check path is exercised.
       const port = String((server.address() as AddressInfo).port);
       allowLoopback.allowedPorts.push(port);
-      base = `http://localhost:${port}`;
+      base = `http://127.0.0.1:${port}`;
     });
     afterAll(() => server.close());
 
