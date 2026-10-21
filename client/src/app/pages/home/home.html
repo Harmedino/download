@@ -5,7 +5,7 @@
       <span class="bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent">Instantly.</span>
     </h1>
     <p class="animate-fade-up stagger-1 mx-auto mt-3 max-w-xl text-zinc-600 dark:text-zinc-400">
-      Paste a link from YouTube, TikTok, Instagram, Facebook, X, Vimeo, SoundCloud and more to preview and download the video, audio or image.
+      Paste a link from YouTube, TikTok, Instagram, Facebook, X, Vimeo, SoundCloud and more, or a direct link to a media file, to preview and download it. Then edit it with the <a routerLink="/tools" class="font-medium text-violet-600 underline dark:text-violet-300">video tools</a>.
     </p>
   </div>
 
@@ -58,14 +58,14 @@
       @if (platformName()) {
         Detected: <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ platformName() }}</span>
       } @else if (url().trim()) {
-        We don't recognise this site yet.
+        Not one of the listed sites. We'll check whether it is a direct link to a video, audio or image file.
       }
     </p>
   </form>
 
   @if (error()) {
     <div class="mt-2">
-      <app-error-banner [error]="error()" [retryable]="error()?.code !== 'INVALID_URL' && error()?.code !== 'UNSUPPORTED_PLATFORM'" (retry)="submit()" />
+      <app-error-banner [error]="error()" [retryable]="!['INVALID_URL', 'UNSUPPORTED_PLATFORM', 'UNSUPPORTED_SOURCE', 'PROTECTED_CONTENT', 'URL_NOT_ALLOWED'].includes(error()?.code ?? '')" (retry)="submit()" />
     </div>
   }
 

@@ -9,6 +9,8 @@ import { JobTracker, triggerDownload } from '../../core/job-tracker';
 import { MediaStateService } from '../../core/media-state.service';
 import type { FetchResponse, JobView, MediaItem, QualityPreset } from '../../core/models';
 import { PLATFORM_NAMES } from '../../core/platform';
+import { ConfigService } from '../../core/config.service';
+import { TOOL_LINKS, type ToolLink } from '../../core/tools';
 import { AdSlot } from '../../shared/ad-slot';
 import { ErrorBanner } from '../../shared/error-banner';
 import { PlatformIcon } from '../../shared/platform-icon';
@@ -27,6 +29,7 @@ export class Result {
   private readonly history = inject(HistoryService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly config = inject(ConfigService);
 
   /** Bound from the `?url=` query param (withComponentInputBinding), so reloads and shared links work. */
   readonly url = input<string>('');
@@ -50,7 +53,25 @@ export class Result {
   private readonly itemTrackers = new Map<number, JobTracker>();
 
   protected readonly meta = computed(() => this.data()?.metadata ?? null);
-  protected readonly platformName = computed(() => (this.data() ? PLATFORM_NAMES[this.data()!.platform] : ''));
+  protected readonly platformName = computed(() => {
+    const p = this.data()?.platform;
+    if (!p) return '';
+    return p === 'direct' ? 'Direct link' : PLATFORM_NAMES[p];
+  });
+  protected readonly platformIcon = computed(() => {
+    const p = this.data()?.platform;
+    return p && p !== 'direct' ? p : null;
+  });
+  /** Video tools this post can be opened in (single videos only). */
+  protected readonly editTools = computed(() => {
+    const m = this.meta();
+    // Audio-only sources (SoundCloud) report no video formats; direct links have none until imported.
+    const isVideo = m?.kind === 'video' && (m.formats.length > 0 || this.data()?.platform === 'direct');
+    return isVideo ? TOOL_LINKS.filter((t) => t.tool && t.tool !== 'thumbnail' && this.config.has(t.tool)) : [];
+  });
+  /** Downloads the video to the server, then opens it in a tool. */
+  protected readonly toTool = new JobTracker(this.api);
+  protected readonly toolTarget = signal<string | null>(null);
   protected readonly isCarousel = computed(() => (this.meta()?.items.length ?? 0) > 1);
   protected readonly isVideo = computed(() => this.meta()?.kind === 'video');
   protected readonly selectedFormat = computed(() => this.meta()?.formats.find((f) => f.id === this.quality()) ?? null);
@@ -71,6 +92,7 @@ export class Result {
       this.main.cancel();
       this.zip.cancel();
       this.toRemoveBg.cancel();
+      this.toTool.cancel();
       this.listen.cancel();
       this.itemTrackers.forEach((t) => t.cancel());
     });
@@ -183,6 +205,16 @@ export class Result {
         void this.router.navigate(['/remove-bg'], { queryParams: { fileId: f.id, name: f.name } });
       },
     );
+  }
+
+  protected openInTool(t: ToolLink): void {
+    const d = this.data();
+    if (!d) return;
+    this.toolTarget.set(t.path);
+    this.toTool.run(this.api.startDownload({ url: d.sourceUrl, formatId: this.quality() ?? undefined }), (job) => {
+      const f = job.files[0];
+      if (f) void this.router.navigate([t.path], { queryParams: { fileId: f.id } });
+    });
   }
 
   private finish(job: JobView, thumbnail: string | null): void {

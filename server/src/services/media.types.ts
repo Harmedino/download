@@ -1,6 +1,6 @@
-import type { Platform } from './platform.js';
+import type { SourcePlatform } from './sources.js';
 
-export type Extractor = 'yt-dlp' | 'gallery-dl';
+export type Extractor = 'yt-dlp' | 'gallery-dl' | 'direct';
 
 /** A quality preset the client can request. The server maps it to a yt-dlp format selector. */
 export interface FormatOption {
@@ -42,7 +42,7 @@ export interface MediaMetadata {
 }
 
 export interface FetchResult {
-  platform: Platform;
+  platform: SourcePlatform;
   sourceUrl: string;
   metadata: MediaMetadata;
 }

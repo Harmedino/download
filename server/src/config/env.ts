@@ -22,6 +22,22 @@ const schema = z.object({
   FFPROBE_PATH: z.string().default('ffprobe'),
   MAX_DOWNLOAD_MB: z.coerce.number().positive().default(500),
   FILE_TTL_MINUTES: z.coerce.number().positive().default(60),
+  /** Uploads for the video tools (videos, audio and images). */
+  MAX_MEDIA_UPLOAD_MB: z.coerce.number().positive().default(500),
+  /** Longest video or audio the tools accept. */
+  MAX_MEDIA_DURATION_MINUTES: z.coerce.number().positive().default(60),
+  /** A media job is killed (and marked failed) after this long. */
+  JOB_TIMEOUT_MINUTES: z.coerce.number().positive().default(30),
+  /** How many ffmpeg jobs run at once. Each uses FFMPEG_THREADS cores. */
+  MEDIA_CONCURRENCY: z.coerce.number().int().positive().default(1),
+  FFMPEG_THREADS: z.coerce.number().int().positive().default(2),
+  /** Longest side of any video the tools write; larger sources are scaled down. */
+  MAX_OUTPUT_SIDE: z.coerce.number().int().positive().default(3840),
+  /** Allow public direct links to media files (https://example.com/clip.mp4). */
+  DIRECT_URLS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -35,6 +51,8 @@ export const env = {
   ...parsed.data,
   TEMP_DIR: path.resolve(parsed.data.TEMP_DIR),
   MAX_UPLOAD_BYTES: Math.round(parsed.data.MAX_UPLOAD_MB * 1024 * 1024),
+  MAX_MEDIA_UPLOAD_BYTES: Math.round(parsed.data.MAX_MEDIA_UPLOAD_MB * 1024 * 1024),
+  JOB_TIMEOUT_MS: Math.round(parsed.data.JOB_TIMEOUT_MINUTES * 60_000),
 };
 
 export type Env = typeof env;

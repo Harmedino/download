@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../core/api.service';
 import { ApiError } from '../../core/errors';
 import { formatBytes, timeAgo } from '../../core/format';
@@ -16,7 +16,7 @@ import { Spinner } from '../../shared/spinner';
 @Component({
   selector: 'app-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AdSlot, PlatformIcon, Spinner, ErrorBanner],
+  imports: [AdSlot, PlatformIcon, RouterLink, Spinner, ErrorBanner],
   templateUrl: './home.html',
 })
 export class Home {
@@ -65,10 +65,8 @@ export class Home {
       this.error.set(new ApiError('INVALID_URL', 'Invalid link'));
       return;
     }
-    if (!detectPlatform(url)) {
-      this.error.set(new ApiError('UNSUPPORTED_PLATFORM', 'Unsupported platform'));
-      return;
-    }
+    // Links outside the platform list go to the server too: it accepts direct media file links
+    // and explains anything it can't handle (DRM services, web pages, private addresses).
     this.loading.set(true);
     this.error.set(null);
     this.api.fetchMedia(url).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
