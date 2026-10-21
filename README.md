@@ -28,6 +28,33 @@ npm install
 npm start                   # http://localhost:4200
 ```
 
+## Deploying
+
+The two halves deploy separately:
+
+| Part | Where | Why |
+|------|-------|-----|
+| `client/` (Angular) | Vercel or Netlify | Static site |
+| `server/` (API) | Render or Railway, using `server/Dockerfile` | Needs ffmpeg, yt-dlp, gallery-dl, MongoDB and long-running jobs, which serverless platforms like Vercel can't provide |
+| Database | MongoDB Atlas | Free tier is enough to start |
+
+**Do not deploy `server/` to Vercel.** If a Vercel project builds `snapgrab-server`, change its Root Directory to `client` (or delete it).
+
+### API on Render
+1. MongoDB Atlas: create a cluster and a database user, and under *Network Access* allow `0.0.0.0/0`. Copy the `mongodb+srv://` connection string.
+2. Render: **New > Blueprint**, pick this repo. `render.yaml` creates `snapgrab-api` from `server/Dockerfile`.
+3. Set `MONGO_URI` (Atlas string) and `CLIENT_ORIGIN` (your Vercel URL, e.g. `https://your-app.vercel.app`).
+4. Check `https://<your-api>.onrender.com/api/health` shows `"mongo":"connected"` and the tools as available.
+
+On Railway, create a service from the repo with root directory `server`; `server/railway.json` selects the Dockerfile.
+
+Background removal loads a ~150 MB model and is CPU-heavy, so use an instance with at least 2 GB RAM.
+
+### Client on Vercel
+1. **Root Directory:** `client` (framework, build command and output directory come from `client/vercel.json`).
+2. **Environment variable:** `API_BASE_URL` = your API URL, e.g. `https://snapgrab-api.onrender.com`.
+3. Deploy, then make sure that URL is in the API's `CLIENT_ORIGIN`.
+
 ## Tests
 
 ```bash

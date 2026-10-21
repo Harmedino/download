@@ -6,7 +6,14 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGO_URI: z.string().min(1, 'MONGO_URI is required'),
   PORT: z.coerce.number().int().positive().default(4000),
-  CLIENT_ORIGIN: z.string().url().default('http://localhost:4200'),
+  /** One origin or a comma-separated list, e.g. "https://snapgrab.vercel.app,https://snapgrab.com" */
+  CLIENT_ORIGIN: z
+    .string()
+    .default('http://localhost:4200')
+    .transform((v) => v.split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean))
+    .refine((list) => list.length > 0 && list.every((o) => /^https?:\/\/[^/\s]+$/.test(o)), {
+      message: 'must be one or more origins like https://app.example.com (no path), comma-separated',
+    }),
   TEMP_DIR: z.string().default('./tmp'),
   MAX_UPLOAD_MB: z.coerce.number().positive().default(50),
   YTDLP_PATH: z.string().default('yt-dlp'),

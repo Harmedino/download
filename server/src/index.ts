@@ -14,7 +14,18 @@ async function main() {
     else logger.warn(`${b.name} NOT found (${b.error}). ${b.installHint}`);
   }
 
-  await connectMongo(env.MONGO_URI);
+  try {
+    await connectMongo(env.MONGO_URI);
+  } catch (err) {
+    // Never log the full URI: it usually contains the database password.
+    const host = env.MONGO_URI.replace(/^mongodb(\+srv)?:\/\/([^@]*@)?/, '').split(/[/?]/)[0];
+    logger.fatal(
+      { reason: (err as Error).message },
+      `Could not connect to MongoDB at ${host}. Check MONGO_URI, and on MongoDB Atlas allow your host's IP ` +
+        '(Network Access, 0.0.0.0/0 for Render/Railway) and verify the database user and password.',
+    );
+    process.exit(1);
+  }
   await startAgenda();
 
   const server = createApp().listen(env.PORT, () => {

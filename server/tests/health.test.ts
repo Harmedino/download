@@ -22,6 +22,11 @@ describe('GET /api/health', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
+  it('allows the configured client origin', async () => {
+    const res = await request(createApp()).get('/api/health').set('Origin', 'http://localhost:4200');
+    expect(res.headers['access-control-allow-origin']).toBe('http://localhost:4200');
+  });
+
   it('restricts CORS to the client origin', async () => {
     const res = await request(createApp()).get('/api/health').set('Origin', 'https://evil.example');
     expect(res.headers['access-control-allow-origin']).not.toBe('https://evil.example');
