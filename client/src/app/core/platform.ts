@@ -8,6 +8,16 @@ const RULES: Array<[Platform, RegExp]> = [
   ['twitter', /(^|\.)(twitter\.com|x\.com)$/],
   ['pinterest', /(^|\.)(pinterest\.[a-z.]{2,6}|pin\.it)$/],
   ['reddit', /(^|\.)(reddit\.com|redd\.it)$/],
+  ['vimeo', /(^|\.)vimeo\.com$/],
+  ['dailymotion', /(^|\.)(dailymotion\.com|dai\.ly)$/],
+  ['twitch', /(^|\.)twitch\.tv$/],
+  ['soundcloud', /(^|\.)soundcloud\.com$/],
+  ['linkedin', /(^|\.)linkedin\.com$/],
+  ['tumblr', /(^|\.)tumblr\.com$/],
+  ['snapchat', /(^|\.)snapchat\.com$/],
+  ['bluesky', /(^|\.)bsky\.app$/],
+  ['streamable', /(^|\.)streamable\.com$/],
+  ['imgur', /(^|\.)imgur\.com$/],
 ];
 
 export const PLATFORM_NAMES: Record<Platform, string> = {
@@ -18,6 +28,16 @@ export const PLATFORM_NAMES: Record<Platform, string> = {
   twitter: 'X / Twitter',
   pinterest: 'Pinterest',
   reddit: 'Reddit',
+  vimeo: 'Vimeo',
+  dailymotion: 'Dailymotion',
+  twitch: 'Twitch',
+  soundcloud: 'SoundCloud',
+  linkedin: 'LinkedIn',
+  tumblr: 'Tumblr',
+  snapchat: 'Snapchat',
+  bluesky: 'Bluesky',
+  streamable: 'Streamable',
+  imgur: 'Imgur',
 };
 
 /** Client-side mirror of the server allowlist, used only for the live platform icon. */

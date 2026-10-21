@@ -20,7 +20,7 @@ interface FriendlyText {
 /** Friendly copy for the error codes the API returns. Falls back to the server's message. */
 const FRIENDLY: Record<string, FriendlyText> = {
   INVALID_URL: { title: "That link doesn't look right", hint: 'Copy the full link from the share button of the post and paste it again.' },
-  UNSUPPORTED_PLATFORM: { title: 'This site is not supported', hint: 'Try a link from TikTok, Instagram, YouTube, Facebook, X/Twitter, Pinterest or Reddit.' },
+  UNSUPPORTED_PLATFORM: { title: 'This site is not supported yet', hint: 'Try a link from one of the sites listed below the search box.' },
   UNSUPPORTED_URL: { title: 'No media found at this link', hint: 'Make sure the link opens a single post or video, not a profile or feed.' },
   PRIVATE_POST: { title: 'This post is private', hint: 'Only public posts can be downloaded. We never ask for your social media login.' },
   MEDIA_UNAVAILABLE: { title: 'This post is unavailable', hint: 'It may have been deleted or restricted in your region.' },
@@ -33,6 +33,7 @@ const FRIENDLY: Record<string, FriendlyText> = {
   INVALID_REQUEST: { title: 'Something is missing', hint: 'Check your choices and try again.' },
   FORMAT_UNAVAILABLE: { title: 'Quality not available', hint: 'Pick one of the listed qualities.' },
   AUDIO_UNAVAILABLE: { title: 'No audio track', hint: 'Audio-only download works for videos only.' },
+  UPSTREAM_BLOCKED: { title: 'The platform is blocking us', hint: 'It is refusing requests from our server right now. Please try again later.' },
   UPSTREAM_RATE_LIMITED: { title: 'The platform is busy', hint: 'They are limiting requests right now. Try again in a few minutes.' },
   RATE_LIMITED: { title: 'Slow down a little', hint: "You've made a lot of requests. Please wait a minute and try again." },
   UPSTREAM_UNREACHABLE: { title: "Couldn't reach the platform", hint: 'Please try again shortly.' },

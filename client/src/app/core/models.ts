@@ -1,4 +1,21 @@
-export type Platform = 'tiktok' | 'instagram' | 'youtube' | 'facebook' | 'twitter' | 'pinterest' | 'reddit';
+export type Platform =
+  | 'tiktok'
+  | 'instagram'
+  | 'youtube'
+  | 'facebook'
+  | 'twitter'
+  | 'pinterest'
+  | 'reddit'
+  | 'vimeo'
+  | 'dailymotion'
+  | 'twitch'
+  | 'soundcloud'
+  | 'linkedin'
+  | 'tumblr'
+  | 'snapchat'
+  | 'bluesky'
+  | 'streamable'
+  | 'imgur';
 export type QualityPreset = '360p' | '720p' | '1080p' | 'best';
 
 export interface FormatOption {

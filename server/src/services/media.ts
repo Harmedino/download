@@ -9,7 +9,7 @@ import type { Platform } from './platform.js';
 
 const CACHE_MS = 60 * 60 * 1000;
 // Platforms where posts can be image-only or mixed carousels, which gallery-dl handles better than yt-dlp.
-const IMAGE_PLATFORMS = new Set<Platform>(['instagram', 'pinterest', 'twitter', 'reddit', 'tiktok', 'facebook']);
+const IMAGE_PLATFORMS = new Set<Platform>(['instagram', 'pinterest', 'twitter', 'reddit', 'tiktok', 'facebook', 'tumblr', 'bluesky', 'imgur']);
 const NO_MEDIA_CODES = new Set(['NO_MEDIA', 'UNSUPPORTED_URL']);
 
 /** Runs yt-dlp first and falls back to gallery-dl for image posts and carousels. */

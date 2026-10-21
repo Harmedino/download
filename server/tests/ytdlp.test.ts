@@ -80,6 +80,7 @@ describe('mapExtractorError', () => {
   it.each([
     ['ERROR: [Instagram] abc: Requested content is not available, rate-limit reached or login required', 'PRIVATE_POST'],
     ['ERROR: [youtube] x: Private video. Sign in if you\'ve been granted access to this video', 'PRIVATE_POST'],
+    ["ERROR: [youtube] x: Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication.", 'UPSTREAM_BLOCKED'],
     ['ERROR: Unsupported URL: https://www.reddit.com/', 'UNSUPPORTED_URL'],
     ['ERROR: [youtube] x: Video unavailable', 'MEDIA_UNAVAILABLE'],
     ["ERROR: [twitter] 1: No video could be found in this tweet", 'NO_MEDIA'],
