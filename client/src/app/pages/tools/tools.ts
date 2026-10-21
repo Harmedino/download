@@ -37,5 +37,8 @@ import { ToolHeader } from '../../shared/tool-page';
 export class Tools {
   private readonly config = inject(ConfigService);
   protected readonly steps = ['Paste link or upload', 'Preview', 'Pick a tool', 'Edit', 'Export', 'Download'];
-  protected readonly tools = computed(() => TOOL_LINKS.filter((t) => !t.tool || this.config.has(t.tool)));
+  protected readonly tools = computed(() => [
+    ...TOOL_LINKS.filter((t) => !t.tool || this.config.has(t.tool)),
+    { path: '/history', label: 'History', description: 'Your recent downloads and jobs: download again, retry or delete.', tool: null, icon: 'M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5' },
+  ]);
 }

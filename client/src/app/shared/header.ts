@@ -19,7 +19,7 @@ import { TOOL_LINKS } from '../core/tools';
               <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
             </svg>
           </span>
-          <span class="text-lg">SnapGrab</span>
+          <span class="hidden text-lg min-[420px]:inline">SnapGrab</span>
         </a>
         <nav class="relative flex items-center gap-1 text-sm">
           @for (l of links.slice(0, 1); track l.path) {
@@ -47,9 +47,13 @@ import { TOOL_LINKS } from '../core/tools';
           @if (menuOpen()) {
             <div
               id="tools-menu"
-              class="absolute top-full right-0 z-40 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
+              class="absolute top-full right-0 z-40 mt-2 max-h-[calc(100dvh-5rem)] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900"
               (keydown.escape)="menuOpen.set(false)"
             >
+              <a routerLink="/tools" (click)="menuOpen.set(false)" class="mb-1 flex items-center justify-between rounded-xl bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-500/20 dark:text-violet-200">
+                See all tools
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+              </a>
               @for (t of tools(); track t.path) {
                 <a [routerLink]="t.path" class="flex items-start gap-3 rounded-xl p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800" (click)="menuOpen.set(false)">
                   <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-300">
@@ -61,11 +65,11 @@ import { TOOL_LINKS } from '../core/tools';
                   </span>
                 </a>
               }
-              <a routerLink="/tools" (click)="menuOpen.set(false)" class="mt-1 block rounded-xl px-2 py-2 text-center text-xs font-medium text-violet-600 hover:bg-violet-500/10 dark:text-violet-300">All tools</a>
             </div>
           }
           @for (l of links.slice(1); track l.path) {
             <a
+              [class]="l.wide ? 'hidden sm:inline-block' : ''"
               [routerLink]="l.path"
               routerLinkActive="bg-zinc-200/70 text-zinc-900 dark:bg-zinc-800 dark:text-white"
               [routerLinkActiveOptions]="{ exact: l.path === '/' }"
@@ -103,6 +107,7 @@ export class Header {
   protected readonly menuOpen = signal(false);
   protected readonly links = [
     { path: '/', label: 'Download' },
+    { path: '/tools', label: 'All tools', wide: true },
     { path: '/history', label: 'History' },
   ];
   protected readonly tools = computed(() => TOOL_LINKS.filter((t) => t.path !== '/' && (!t.tool || this.config.has(t.tool))));
