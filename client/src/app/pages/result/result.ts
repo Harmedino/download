@@ -9,6 +9,7 @@ import { JobTracker, triggerDownload } from '../../core/job-tracker';
 import { MediaStateService } from '../../core/media-state.service';
 import type { FetchResponse, JobView, MediaItem, QualityPreset } from '../../core/models';
 import { PLATFORM_NAMES } from '../../core/platform';
+import { AdSlot } from '../../shared/ad-slot';
 import { ErrorBanner } from '../../shared/error-banner';
 import { PlatformIcon } from '../../shared/platform-icon';
 import { ProgressBar } from '../../shared/progress-bar';
@@ -17,7 +18,7 @@ import { Spinner } from '../../shared/spinner';
 @Component({
   selector: 'app-result',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PlatformIcon, ErrorBanner, ProgressBar, Spinner],
+  imports: [AdSlot, RouterLink, PlatformIcon, ErrorBanner, ProgressBar, Spinner],
   templateUrl: './result.html',
 })
 export class Result {

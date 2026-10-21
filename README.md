@@ -55,6 +55,19 @@ Background removal loads a ~150 MB model and is CPU-heavy, so use an instance wi
 2. **Environment variable:** `API_BASE_URL` = your API URL, e.g. `https://download-vmbd.onrender.com` (no trailing slash). The build falls back to the URL in `client/src/environments/environment.ts` when this is unset, so keep that file pointing at the live API too.
 3. Deploy, then make sure that URL is in the API's `CLIENT_ORIGIN`.
 
+### Ads (optional)
+Ads stay off until you set one of these on the client's Vercel project and redeploy. Each spot shows a small "Advertisement" label: one under the link box on the home page, one under the download details, and one above the footer on the other pages.
+
+| Variable | What to paste |
+| --- | --- |
+| `ADSENSE_CLIENT` | Your AdSense publisher id, `ca-pub-…` |
+| `ADSENSE_SLOT_HOME`, `ADSENSE_SLOT_RESULT`, `ADSENSE_SLOT_FOOTER` | The `data-ad-slot` number of a display ad unit for each spot |
+| `ADSTERRA_BANNER_KEY` | Key of an Adsterra 728x90 banner (computers and tablets) |
+| `ADSTERRA_MOBILE_KEY` | Key of an Adsterra 320x50 banner (phones) |
+| `ADS_TXT` | Extra `/ads.txt` lines from your ad network, separated by `;` |
+
+AdSense fills a spot when it has a slot id for it; otherwise Adsterra does. With `ADSENSE_CLIENT` set, the build also publishes `/ads.txt` with your Google line. Adsterra banners run in a sandboxed frame, so they cannot redirect the page or open pop-ups by themselves.
+
 ## Security and limits
 
 - Public posts only: SnapGrab never asks for or stores social media logins or cookies.
