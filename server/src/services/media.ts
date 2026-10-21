@@ -6,6 +6,7 @@ import { galleryDlFetch } from './gallerydl.js';
 import { ytdlpFetch } from './ytdlp.js';
 import type { MediaMetadata } from './media.types.js';
 import type { Platform } from './platform.js';
+import { directMetadata, type SourcePlatform } from './sources.js';
 
 const CACHE_MS = 60 * 60 * 1000;
 // Platforms where posts can be image-only or mixed carousels, which gallery-dl handles better than yt-dlp.
@@ -13,7 +14,9 @@ const IMAGE_PLATFORMS = new Set<Platform>(['instagram', 'pinterest', 'twitter', 
 const NO_MEDIA_CODES = new Set(['NO_MEDIA', 'UNSUPPORTED_URL']);
 
 /** Runs yt-dlp first and falls back to gallery-dl for image posts and carousels. */
-export async function extractMetadata(url: string, platform: Platform): Promise<MediaMetadata> {
+export async function extractMetadata(url: string, source: SourcePlatform): Promise<MediaMetadata> {
+  if (source === 'direct') return directMetadata(url);
+  const platform: Platform = source;
   const hasYtdlp = binaryStatus('yt-dlp')?.available;
   const hasGallery = binaryStatus('gallery-dl')?.available && IMAGE_PLATFORMS.has(platform);
 
@@ -49,7 +52,7 @@ export async function extractMetadata(url: string, platform: Platform): Promise<
 const inflight = new Map<string, Promise<MediaMetadata>>();
 
 /** Returns metadata from mediaCache when fresh, otherwise extracts it (deduplicating concurrent requests). */
-export async function getMetadata(url: string, platform: Platform): Promise<{ metadata: MediaMetadata; cached: boolean }> {
+export async function getMetadata(url: string, platform: SourcePlatform): Promise<{ metadata: MediaMetadata; cached: boolean }> {
   const hit = await MediaCache.findOne({ sourceUrl: url, createdAt: { $gt: new Date(Date.now() - CACHE_MS) } }).lean();
   if (hit) return { metadata: hit.metadata, cached: true };
 

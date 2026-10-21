@@ -23,6 +23,14 @@ const MIME: Record<string, string> = {
   gif: 'image/gif',
   heic: 'image/heic',
   zip: 'application/zip',
+  avi: 'video/x-msvideo',
+  wav: 'audio/wav',
+  flac: 'audio/flac',
+  aac: 'audio/aac',
+  srt: 'application/x-subrip',
+  vtt: 'text/vtt',
+  txt: 'text/plain; charset=utf-8',
+  json: 'application/json',
 };
 
 export function mimeFromPath(p: string): string {
@@ -77,6 +85,8 @@ export async function registerFile(opts: {
   name: string;
   jobId?: Types.ObjectId | string | null;
   mimeType?: string;
+  ownerHash?: string | null;
+  probe?: unknown;
 }): Promise<FileDoc> {
   const stat = await fsp.stat(opts.path);
   return FileModel.create({
@@ -85,7 +95,15 @@ export async function registerFile(opts: {
     size: stat.size,
     mimeType: opts.mimeType ?? mimeFromPath(opts.path),
     jobId: opts.jobId ?? null,
+    ownerHash: opts.ownerHash ?? null,
+    probe: opts.probe ?? null,
   });
+}
+
+/** Deletes a file's bytes (only inside TEMP_DIR) and its record. */
+export async function deleteStoredFile(file: { _id: Types.ObjectId | unknown; path: string }): Promise<void> {
+  if (isInsideTempDir(file.path)) await fsp.rm(file.path, { force: true }).catch(() => undefined);
+  await FileModel.deleteOne({ _id: file._id as Types.ObjectId });
 }
 
 export function zipFiles(files: Array<{ path: string; name: string }>, outPath: string): Promise<void> {

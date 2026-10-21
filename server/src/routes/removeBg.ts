@@ -81,7 +81,14 @@ removeBgRouter.post('/image', imageLimit, uploadImage(), async (req, res) => {
     await fsp.rm(inputPath, { force: true }).catch(() => undefined);
     throw err;
   });
-  const job = await Job.create({ type: 'remove-bg-image', params });
+  const job = await Job.create({
+    type: 'remove-bg-image',
+    params,
+    ownerHash: req.ownerHash ?? null,
+    title: inputName,
+    sourceType: req.body?.fileId ? 'link' : 'upload',
+    summary: { format: 'PNG', resolution: body.background },
+  });
   await enqueue('remove-bg-image', job._id);
   res.status(202).json({ jobId: job._id });
 });

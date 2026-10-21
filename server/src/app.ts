@@ -13,6 +13,11 @@ import { downloadRouter } from './routes/download.js';
 import { jobsRouter } from './routes/jobs.js';
 import { filesRouter } from './routes/files.js';
 import { removeBgRouter } from './routes/removeBg.js';
+import { identifyOwner } from './middleware/owner.js';
+import { configRouter } from './routes/config.js';
+import { historyRouter } from './routes/history.js';
+import { mediaRouter } from './routes/media.js';
+import { toolsRouter } from './routes/tools.js';
 
 export function createApp() {
   const app = express();
@@ -30,7 +35,8 @@ export function createApp() {
   app.use(
     cors({
       origin: env.CLIENT_ORIGIN,
-      methods: ['GET', 'POST'],
+      methods: ['GET', 'POST', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'X-Client-Id'],
       exposedHeaders: ['Content-Disposition'],
     }),
   );
@@ -43,6 +49,7 @@ export function createApp() {
     }),
   );
   app.use('/api', limits.api());
+  app.use('/api', identifyOwner);
 
   app.use('/api/health', healthRouter);
   app.use('/api/fetch', requireDb, limits.fetch(), fetchRouter);
@@ -50,6 +57,10 @@ export function createApp() {
   app.use('/api/remove-bg', requireDb, removeBgRouter); // per-endpoint limits inside, before the upload
   app.use('/api/jobs', requireDb, limits.jobs(), jobsRouter);
   app.use('/api/files', requireDb, limits.files(), filesRouter);
+  app.use('/api/config', configRouter);
+  app.use('/api/media', requireDb, mediaRouter); // upload limit inside, before multer
+  app.use('/api/tools', requireDb, limits.tools(), toolsRouter);
+  app.use('/api/history', requireDb, limits.jobs(), historyRouter);
 
   app.use(notFound);
   app.use(errorHandler);

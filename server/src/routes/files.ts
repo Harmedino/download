@@ -9,12 +9,12 @@ import { isInsideTempDir } from '../services/storage.js';
 export const filesRouter = Router();
 
 // Types a browser may render inline for previews. Everything else is always an attachment.
-const INLINE_SAFE = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm)|audio\/(mpeg|mp4|ogg))$/;
+const INLINE_SAFE = /^(image\/(png|jpeg|webp|gif)|video\/(mp4|webm|quicktime|x-matroska)|audio\/(mpeg|mp4|ogg|wav)|text\/vtt)$/;
 
 filesRouter.get('/:id', async (req, res) => {
   const id = assertObjectId(req.params.id, 'file id');
   const file = await FileModel.findById(id).lean();
-  const gone = () => new AppError(404, 'FILE_EXPIRED', 'This file has expired. Files are kept for 1 hour; please download it again.');
+  const gone = () => new AppError(404, 'FILE_EXPIRED', 'This file has expired. Files are kept for a limited time; please download it again.');
   if (!file || !isInsideTempDir(file.path) || !fs.existsSync(file.path)) throw gone();
 
   const inline = req.query.inline === '1' && INLINE_SAFE.test(file.mimeType);

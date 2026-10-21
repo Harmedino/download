@@ -132,11 +132,13 @@ export const limits = {
       windowMs: 15 * MIN,
       limit: 600,
       message: 'Too many requests. Please slow down and try again in a few minutes.',
-      skip: (req) => /^\/(jobs|files|health)(\/|$)/.test(req.path),
+      skip: (req) => /^\/(jobs|files|health|history)(\/|$)/.test(req.path),
     }),
   fetch: () => limiter({ name: 'fetch', windowMs: MIN, limit: 20, message: "You're fetching links very quickly. Please wait a minute and try again." }),
   download: () => limiter({ name: 'download', windowMs: 10 * MIN, limit: 40, message: "You've started a lot of downloads. Please wait a few minutes." }),
   removeBgImage: () => limiter({ name: 'rbg-image', windowMs: 10 * MIN, limit: 20, message: "You've removed a lot of backgrounds. Please wait a few minutes." }),
+  mediaUpload: () => limiter({ name: 'media-upload', windowMs: 10 * MIN, limit: 30, message: "You've uploaded a lot of files. Please wait a few minutes." }),
+  tools: () => limiter({ name: 'tools', windowMs: 10 * MIN, limit: 40, message: "You've started a lot of video jobs. Please wait a few minutes." }),
   /** Job polling runs about once a second per open job. */
   jobs: () => limiter({ name: 'jobs', windowMs: MIN, limit: 300, message: 'Too many status checks. Please slow down.' }),
   /** Video previews make several Range requests per file. */

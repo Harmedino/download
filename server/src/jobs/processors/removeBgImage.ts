@@ -43,7 +43,7 @@ export async function processRemoveBgImage(agendaJob: AgendaJob<{ jobId: string 
     for (const [i, o] of outputs.entries()) {
       const filePath = path.join(dir, `${i}.png`);
       await fsp.writeFile(filePath, o.buf);
-      const f = await registerFile({ path: filePath, name: safeFileName(o.name, 'png'), jobId: job._id, mimeType: 'image/png' });
+      const f = await registerFile({ path: filePath, name: safeFileName(o.name, 'png'), jobId: job._id, mimeType: 'image/png', ownerHash: job.ownerHash });
       ids.push(f._id);
     }
     await updateJob(jobId, { status: 'done', progress: 100, stage: null, outputFiles: ids });

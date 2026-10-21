@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, exhaustMap, filter, map, of, retry, switchMap, takeWhile, tap, throwError, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ApiError, toApiError } from './errors';
-import type { DownloadRequest, FetchResponse, JobView } from './models';
+import type { DownloadRequest, FetchResponse, JobView, MediaFile, ServerConfig, ToolType } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -45,6 +45,59 @@ export class ApiService {
       map((r) => r.jobId),
       catchError((e) => throwError(() => toApiError(e))),
     );
+  }
+
+  /** Uploads a video, audio or image for the tools. Emits upload progress (0-100), then the stored file. */
+  uploadMedia(file: File): Observable<{ progress: number; file?: MediaFile }> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return this.http.post<MediaFile>(`${this.base}/api/media/upload`, form, { reportProgress: true, observe: 'events' }).pipe(
+      filter((e) => e.type === HttpEventType.UploadProgress || e.type === HttpEventType.Response),
+      map((e) =>
+        e.type === HttpEventType.Response ? { progress: 100, file: e.body! } : { progress: e.total ? Math.round((e.loaded / e.total) * 100) : 0 },
+      ),
+      catchError((e) => throwError(() => toApiError(e))),
+    );
+  }
+
+  /** A stored file with its media details (duration, size, codecs). */
+  getMedia(id: string): Observable<MediaFile> {
+    return this.http.get<MediaFile>(`${this.base}/api/media/${encodeURIComponent(id)}`).pipe(catchError((e) => throwError(() => toApiError(e))));
+  }
+
+  deleteMedia(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/media/${encodeURIComponent(id)}`).pipe(catchError((e) => throwError(() => toApiError(e))));
+  }
+
+  /** Starts a media tool job, e.g. startTool('convert', { fileId, format: 'webm' }). */
+  startTool(type: ToolType, body: unknown): Observable<string> {
+    return this.startJsonJob(`/api/tools/${type}`, body);
+  }
+
+  config(): Observable<ServerConfig> {
+    return this.http.get<ServerConfig>(`${this.base}/api/config`).pipe(catchError((e) => throwError(() => toApiError(e))));
+  }
+
+  history(): Observable<JobView[]> {
+    return this.http.get<{ jobs: JobView[] }>(`${this.base}/api/history`).pipe(
+      map((r) => r.jobs),
+      catchError((e) => throwError(() => toApiError(e))),
+    );
+  }
+
+  clearHistory(): Observable<number> {
+    return this.http.delete<{ deleted: number }>(`${this.base}/api/history`).pipe(
+      map((r) => r.deleted),
+      catchError((e) => throwError(() => toApiError(e))),
+    );
+  }
+
+  retryJob(id: string): Observable<string> {
+    return this.startJsonJob(`/api/jobs/${encodeURIComponent(id)}/retry`, {});
+  }
+
+  deleteJob(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/api/jobs/${encodeURIComponent(id)}`).pipe(catchError((e) => throwError(() => toApiError(e))));
   }
 
   getJob(id: string): Observable<JobView> {

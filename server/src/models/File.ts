@@ -11,6 +11,10 @@ const fileSchema = new Schema(
     size: { type: Number, required: true },
     mimeType: { type: String, required: true },
     jobId: { type: Schema.Types.ObjectId, ref: 'Job', default: null },
+    /** Same as Job.ownerHash. Files with an owner can only be used as tool input by that browser. */
+    ownerHash: { type: String, default: null },
+    /** ffprobe summary for media files (see services/ffmpeg.ts MediaInfo). */
+    probe: { type: Schema.Types.Mixed, default: null },
     createdAt: { type: Date, default: Date.now, expires: Math.round(env.FILE_TTL_MINUTES * 60) },
   },
   { collection: 'files', versionKey: false },

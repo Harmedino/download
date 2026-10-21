@@ -38,7 +38,7 @@ export interface MediaItem {
 }
 
 export interface MediaMetadata {
-  extractor: 'yt-dlp' | 'gallery-dl';
+  extractor: 'yt-dlp' | 'gallery-dl' | 'direct';
   kind: 'video' | 'image' | 'carousel';
   id: string | null;
   title: string;
@@ -53,10 +53,24 @@ export interface MediaMetadata {
 }
 
 export interface FetchResponse {
-  platform: Platform;
+  platform: Platform | 'direct';
   sourceUrl: string;
   cached: boolean;
   metadata: MediaMetadata;
+}
+
+export interface MediaInfo {
+  kind: 'video' | 'audio' | 'image';
+  format: string;
+  duration: number | null;
+  size: number | null;
+  bitRate: number | null;
+  width: number | null;
+  height: number | null;
+  fps: number | null;
+  videoCodec: string | null;
+  audioCodec: string | null;
+  hasAudio: boolean;
 }
 
 export interface JobFile {
@@ -66,20 +80,46 @@ export interface JobFile {
   mimeType: string;
   url: string;
   expiresAt: string;
+  /** ffprobe details, for files uploaded or probed through /api/media. */
+  info?: MediaInfo | null;
+}
+
+/** A file ready to be used as tool input (an upload, or an imported link). */
+export type MediaFile = JobFile;
+
+export type ToolType = 'edit' | 'convert' | 'compress' | 'gif' | 'frames' | 'thumbnail' | 'shorts' | 'subtitles' | 'burn-subtitles' | 'creator-pack';
+
+export interface ServerConfig {
+  fileTtlMinutes: number;
+  maxUploadMb: number;
+  maxMediaUploadMb: number;
+  maxMediaMinutes: number;
+  maxDownloadMb: number;
+  jobTimeoutMinutes: number;
+  directUrls: boolean;
+  tools: ToolType[];
 }
 
 export type JobStatus = 'queued' | 'processing' | 'done' | 'failed';
 
 export interface JobView {
   id: string;
-  type: 'fetch' | 'download' | 'remove-bg-image';
+  type: 'fetch' | 'download' | 'remove-bg-image' | ToolType;
   status: JobStatus;
   progress: number;
   stage: string | null;
-  platform: Platform | null;
+  platform: Platform | 'direct' | null;
   error: { code: string; message: string } | null;
   createdAt: string;
   files: JobFile[];
+  updatedAt?: string;
+  title?: string | null;
+  sourceType?: 'upload' | 'link' | 'direct' | null;
+  sourceUrl?: string | null;
+  summary?: { format?: string | null; resolution?: string | null } | null;
+  result?: unknown;
+  warnings?: string[];
+  retryable?: boolean;
 }
 
 export interface DownloadRequest {
@@ -92,7 +132,7 @@ export interface DownloadRequest {
 export interface HistoryEntry {
   id: string;
   sourceUrl: string;
-  platform: Platform | null;
+  platform: Platform | 'direct' | null;
   title: string;
   thumbnail: string | null;
   fileName: string;

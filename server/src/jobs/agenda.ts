@@ -3,12 +3,19 @@ import { MongoBackend } from '@agendajs/mongo-backend';
 import mongoose from 'mongoose';
 import type { Types } from 'mongoose';
 import { logger } from '../logger.js';
-import type { JobType } from '../models/Job.js';
+import { env } from '../config/env.js';
+import { isMediaJobType, type JobType } from '../models/Job.js';
 import { processCleanup } from './processors/cleanup.js';
 import { processDownload } from './processors/download.js';
+import { processMedia } from './processors/media.js';
 import { processRemoveBgImage } from './processors/removeBgImage.js';
 
-export type QueueName = Exclude<JobType, 'fetch'> | 'cleanup-files';
+export type QueueName = 'download' | 'remove-bg-image' | 'media' | 'cleanup-files';
+
+/** All ffmpeg/AI tools share one queue so MEDIA_CONCURRENCY caps CPU use across them. */
+export function queueFor(type: Exclude<JobType, 'fetch'>): QueueName {
+  return isMediaJobType(type) ? 'media' : type;
+}
 
 let agenda: Agenda | null = null;
 
@@ -20,12 +27,13 @@ export async function startAgenda(): Promise<Agenda> {
     name: `snapgrab-${process.pid}`,
     backend: new MongoBackend({ mongo: db, collection: 'agendaJobs' }),
     processEvery: '2 seconds',
-    maxConcurrency: 8,
+    maxConcurrency: 8 + env.MEDIA_CONCURRENCY,
     defaultLockLifetime: 15 * 60_000,
   });
 
   agenda.define('download', processDownload, { concurrency: 3, removeOnComplete: true });
   agenda.define('remove-bg-image', processRemoveBgImage, { concurrency: 2, removeOnComplete: true });
+  agenda.define('media', processMedia, { concurrency: env.MEDIA_CONCURRENCY, removeOnComplete: true, lockLifetime: env.JOB_TIMEOUT_MS + 5 * 60_000 });
   agenda.define('cleanup-files', processCleanup, { concurrency: 1 });
 
   agenda.on('error', (err: unknown) => logger.error({ err }, 'Agenda error'));

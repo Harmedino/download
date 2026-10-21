@@ -7,7 +7,7 @@ import { assertQueueCapacity } from '../middleware/queueGuard.js';
 import { parseBody } from '../middleware/validate.js';
 import { Job } from '../models/Job.js';
 import { getMetadata } from '../services/media.js';
-import { validateMediaUrl } from '../services/platform.js';
+import { resolveSource } from '../services/sources.js';
 
 export const downloadRouter = Router();
 
@@ -20,7 +20,7 @@ const downloadSchema = z.object({
 
 downloadRouter.post('/', async (req, res) => {
   const body = parseBody(downloadSchema, req.body);
-  const { url, platform } = validateMediaUrl(body.url);
+  const { url, platform } = resolveSource(body.url);
   // Resolve metadata up front (usually from cache) so private/unsupported posts fail immediately.
   const { metadata } = await getMetadata(url, platform);
 
@@ -37,21 +37,39 @@ downloadRouter.post('/', async (req, res) => {
 
   const params: DownloadParams = { formatId: body.formatId, itemIndex: body.itemIndex, audioOnly: body.audioOnly };
   await assertQueueCapacity('download');
-  const job = await Job.create({ type: 'download', sourceUrl: url, platform, params });
+  const job = await Job.create({
+    type: 'download',
+    sourceUrl: url,
+    platform,
+    params,
+    ownerHash: req.ownerHash ?? null,
+    title: item?.title || metadata.title,
+    sourceType: platform === 'direct' ? 'direct' : 'link',
+    summary: { format: body.audioOnly ? 'MP3' : (item?.ext ?? 'mp4').toUpperCase(), resolution: body.audioOnly ? 'Audio' : (body.formatId ?? 'Original') },
+  });
   await enqueue('download', job._id);
   res.status(202).json({ jobId: job._id });
 });
 
 downloadRouter.post('/zip', async (req, res) => {
   const body = parseBody(z.object({ url: z.string().max(4096) }), req.body);
-  const { url, platform } = validateMediaUrl(body.url);
+  const { url, platform } = resolveSource(body.url);
   const { metadata } = await getMetadata(url, platform);
   if (metadata.items.length < 2) {
     throw new AppError(400, 'NOT_A_CAROUSEL', 'This post has a single item, so there is nothing to zip. Use the normal download instead.');
   }
   const params: DownloadParams = { zip: true };
   await assertQueueCapacity('download');
-  const job = await Job.create({ type: 'download', sourceUrl: url, platform, params });
+  const job = await Job.create({
+    type: 'download',
+    sourceUrl: url,
+    platform,
+    params,
+    ownerHash: req.ownerHash ?? null,
+    title: metadata.title,
+    sourceType: 'link',
+    summary: { format: 'ZIP', resolution: `${metadata.items.length} items` },
+  });
   await enqueue('download', job._id);
   res.status(202).json({ jobId: job._id });
 });

@@ -47,6 +47,22 @@ const FRIENDLY: Record<string, FriendlyText> = {
   OFFLINE: { title: "You're offline", hint: 'Reconnect to the internet and try again.' },
   SERVER_BUSY: { title: 'SnapGrab is busy right now', hint: 'Lots of people are processing files. Please try again in a few minutes.' },
   INVALID_VIDEO: { title: "We couldn't open that video", hint: 'The file may be damaged. Try an MP4, WebM or MOV.' },
+  PROTECTED_CONTENT: { title: "This content is protected", hint: "It uses DRM or a subscription, so it can't be downloaded. SnapGrab never bypasses copy protection." },
+  UNSUPPORTED_SOURCE: { title: 'Not a supported link', hint: 'Paste a link from a supported site, or a direct link to a media file.' },
+  URL_NOT_ALLOWED: { title: "We can't fetch that address", hint: 'Links to private networks, local addresses or unusual ports are blocked for security.' },
+  TOO_MANY_REDIRECTS: { title: 'Too many redirects', hint: 'That link keeps redirecting. Try the final link instead.' },
+  INVALID_RANGE: { title: 'Pick a longer section', hint: 'The selected time range is too short.' },
+  TARGET_TOO_SMALL: { title: 'Target size too small', hint: 'Pick a bigger size for a video this long.' },
+  TOO_MANY_JOBS: { title: 'You have several jobs running', hint: 'Wait for one to finish, then try again.' },
+  PROCESSING_FAILED: { title: "We couldn't process this file", hint: 'It may be damaged or use an unusual format. Try converting it to MP4 first.' },
+  PROCESSING_TIMEOUT: { title: 'Processing took too long', hint: 'Try a shorter clip or a lower resolution.' },
+  TOOL_UNAVAILABLE: { title: 'Tool not available', hint: 'This server does not offer this tool yet.' },
+  CLIENT_ID_REQUIRED: { title: 'Please refresh the page', hint: 'Your browser did not send its history id.' },
+  JOB_RUNNING: { title: 'Still processing', hint: 'Delete it once it finishes.' },
+  NOT_RETRYABLE: { title: "Can't retry this job", hint: 'Only failed jobs can be retried.' },
+  AI_UNAVAILABLE: { title: 'AI is not set up on this server', hint: 'The site owner needs to add an API key.' },
+  AI_FAILED: { title: 'The AI service failed', hint: 'Please try again in a moment.' },
+  NO_SPEECH: { title: 'No speech found', hint: "We couldn't hear any words in this video." },
   NOT_A_CAROUSEL: { title: 'Nothing to zip', hint: 'This post has a single item; use the normal download.' },
   INVALID_ITEM: { title: 'That item is no longer in the post', hint: 'Fetch the link again and retry.' },
   BODY_TOO_LARGE: { title: 'Request too large', hint: 'Please try again with a shorter link.' },
@@ -54,7 +70,28 @@ const FRIENDLY: Record<string, FriendlyText> = {
 };
 
 /** Codes where the server's own message is more specific than our generic copy. */
-const USE_SERVER_HINT = new Set(['RATE_LIMITED', 'SERVER_BUSY', 'VIDEO_TOO_LONG', 'FILE_TOO_LARGE']);
+const USE_SERVER_HINT = new Set([
+  'RATE_LIMITED',
+  'SERVER_BUSY',
+  'VIDEO_TOO_LONG',
+  'FILE_TOO_LARGE',
+  'UNSUPPORTED_FILE',
+  'UPLOAD_TOO_LARGE',
+  'PROTECTED_CONTENT',
+  'UNSUPPORTED_SOURCE',
+  'INVALID_REQUEST',
+  'INVALID_RANGE',
+  'TARGET_TOO_SMALL',
+  'TOO_MANY_JOBS',
+  'FILE_EXPIRED',
+  'PROCESSING_TIMEOUT',
+  'AUDIO_UNAVAILABLE',
+  'AI_UNAVAILABLE',
+  'AI_FAILED',
+  'NO_SPEECH',
+  'JOB_RUNNING',
+  'NOT_RETRYABLE',
+]);
 
 export function waitText(seconds: number): string {
   if (seconds < 90) return `${Math.max(1, Math.round(seconds))} seconds`;
