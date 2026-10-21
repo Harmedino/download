@@ -44,7 +44,7 @@ The two halves deploy separately:
 1. MongoDB Atlas: create a cluster and a database user, and under *Network Access* allow `0.0.0.0/0`. Copy the `mongodb+srv://` connection string.
 2. Render: **New > Blueprint**, pick this repo. `render.yaml` creates `snapgrab-api` from `server/Dockerfile`.
 3. Set `MONGO_URI` (Atlas string) and `CLIENT_ORIGIN` (your Vercel URL, e.g. `https://your-app.vercel.app`).
-4. Check `https://<your-api>.onrender.com/api/health` shows `"mongo":"connected"` and the tools as available.
+4. Check `https://<your-api>.onrender.com/api/health` shows `"mongo":"connected"`, the tools as available, and your Vercel URL in `allowedOrigins`. The API starts even when MongoDB is unreachable (it keeps retrying and logs why), so a `"degraded"` status points at `MONGO_URI` or Atlas Network Access.
 
 On Railway, create a service from the repo with root directory `server`; `server/railway.json` selects the Dockerfile.
 
