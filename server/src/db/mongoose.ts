@@ -1,12 +1,18 @@
 import mongoose from 'mongoose';
 import { logger } from '../logger.js';
 
+let listening = false;
+
 export async function connectMongo(uri: string): Promise<typeof mongoose> {
   mongoose.set('strictQuery', true);
   // Fail fast instead of queueing queries while disconnected; routes surface DB_UNAVAILABLE.
   mongoose.set('bufferCommands', false);
-  mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
-  mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected'));
+  // connectMongo is retried at startup; register the listeners only once.
+  if (!listening) {
+    listening = true;
+    mongoose.connection.on('disconnected', () => logger.warn('MongoDB disconnected'));
+    mongoose.connection.on('reconnected', () => logger.info('MongoDB reconnected'));
+  }
   const conn = await mongoose.connect(uri, { serverSelectionTimeoutMS: 10_000 });
   logger.info({ db: conn.connection.name }, 'MongoDB connected');
   return conn;
