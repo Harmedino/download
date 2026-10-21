@@ -19,10 +19,10 @@ ENV NODE_ENV=production \
     PIP_BREAK_SYSTEM_PACKAGES=1 \
     PIP_NO_CACHE_DIR=1
 
-# ffmpeg/ffprobe for media processing; Python for yt-dlp and gallery-dl.
+# ffmpeg/ffprobe for media processing, fonts for text overlays and subtitles; Python for yt-dlp and gallery-dl.
 # yt-dlp[default] pulls in yt-dlp-ejs, the challenge solver YouTube needs; plain `yt-dlp` can't read most YouTube formats.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ffmpeg python3 python3-pip ca-certificates \
+ && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core fonts-liberation python3 python3-pip ca-certificates \
  && pip3 install --upgrade "yt-dlp[default]" gallery-dl \
  && apt-get purge -y python3-pip && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/*
