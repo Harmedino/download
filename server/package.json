@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@agendajs/mongo-backend": "^4.0.3",
+    "@anthropic-ai/sdk": "^0.137.0",
     "@imgly/background-removal-node": "^1.4.5",
     "agenda": "^6.2.6",
     "archiver": "^8.0.0",

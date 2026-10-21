@@ -98,6 +98,8 @@ export interface ServerConfig {
   jobTimeoutMinutes: number;
   directUrls: boolean;
   tools: ToolType[];
+  /** Configured AI services (absent on older servers). */
+  ai?: { transcription: { provider: string; model: string } | null; llm: { provider: string; model: string } | null };
 }
 
 export type JobStatus = 'queued' | 'processing' | 'done' | 'failed';

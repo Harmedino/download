@@ -16,3 +16,17 @@ services:
         sync: false # e.g. https://your-app.vercel.app (comma-separate several)
       - key: MAX_UPLOAD_MB
         value: "50"
+      # Video tools: one ffmpeg job at a time on a 1-CPU instance.
+      - key: MEDIA_CONCURRENCY
+        value: "1"
+      - key: FFMPEG_THREADS
+        value: "2"
+      # Optional AI keys (subtitles, transcripts, Creator Pack suggestions). Leave unset to turn those features off.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

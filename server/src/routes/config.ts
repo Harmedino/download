@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { env } from '../config/env.js';
+import { aiStatus } from '../services/ai.js';
 import { binaryStatus } from '../services/binaries.js';
 import { availableTools } from './tools.js';
 
@@ -18,5 +19,7 @@ configRouter.get('/', (_req, res) => {
     jobTimeoutMinutes: env.JOB_TIMEOUT_MINUTES,
     directUrls: env.DIRECT_URLS_ENABLED,
     tools: ffmpeg ? availableTools() : [],
+    /** Which AI services are configured (provider and model only). */
+    ai: aiStatus(),
   });
 });

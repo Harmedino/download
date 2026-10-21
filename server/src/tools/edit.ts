@@ -160,10 +160,10 @@ export interface Graph {
 const r3 = (n: number) => Number(n.toFixed(4));
 
 /** Builds the whole ffmpeg filter graph for an edit. Pure, so it can be tested without ffmpeg. */
-export function buildEditGraph(p: EditParams, inputs: ToolInput[], o: { cropX?: string } = {}): Graph {
+export function buildEditGraph(p: EditParams, inputs: ToolInput[], o: { cropX?: string; size?: { width: number; height: number } } = {}): Graph {
   const clips = planClips(p, inputs);
   const first = clips[0]!.input.info as MediaInfo & { width: number; height: number };
-  const { width: W, height: H } = outputSize(first, p);
+  const { width: W, height: H } = o.size ?? outputSize(first, p);
   const fps = Math.min(60, Math.round(first.fps ?? 30)) || 30;
   const hasAudio = !p.mute && clips.some((c) => c.input.info.hasAudio);
   const chains: string[] = [];
@@ -297,7 +297,7 @@ export async function renderEdit(
   outDir: string,
   outName: string,
   onProgress: (pct: number) => void,
-  o: { cropX?: string; extraFilter?: string } = {},
+  o: { cropX?: string; size?: { width: number; height: number }; extraFilter?: string } = {},
 ): Promise<{ path: string; graph: Graph }> {
   const graph = buildEditGraph(p, inputs, o);
   for (const t of graph.textFiles) await fsp.writeFile(path.join(outDir, t.name), t.text, 'utf8');

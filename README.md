@@ -77,6 +77,14 @@ Besides the link downloader and Remove BG, the site has video tools that all fol
 | Video Editor | `/editor` | Trim, cut sections, merge clips with transitions, crop (draggable, 16:9 / 9:16 / 1:1 / 4:5), resize, rotate, mirror, speed, brightness/contrast/saturation, fades, text overlays, live composition preview |
 | Video Converter | `/convert` | MP4, WebM, MOV, MKV, MP3, M4A, WAV; resolution and frame rate; lossless remux when possible |
 | Video Compressor | `/compress` | Quality levels or a target size in MB |
+| Video to Shorts | `/shorts` | 9:16 at 1080×1920 or 720×1280 for YouTube Shorts, Reels or TikTok (length checked per platform); manual crop, "follow the subject", or the whole frame on a blurred background; optional caption |
+| Frame Extractor | `/frames` | Exact frames at full resolution, a frame every N seconds (with a ZIP), or a contact sheet; JPG, PNG or WebP |
+| Thumbnail Editor | `/thumbnail` | Crop (free or 16:9 / 9:16 / 1:1 / 4:5), brightness, contrast, saturation, sharpen, outlined text; opens frames straight from the Frame Extractor |
+| Subtitle Generator | `/subtitles` | Speech recognition (needs a key, see below) in auto or a chosen language; edit text and timing against the player; font, colour, size, position, box; download SRT/VTT or burn in with libass. Existing .srt/.vtt files can be imported without any key |
+| Creator Pack | `/creator-pack` | Pick items for one ZIP: original and edited video, thumbnail (from a chosen moment), MP3, SRT/VTT, transcript, frames, and AI titles/descriptions/hashtags. Anything that can't be made (no key, no audio, a provider error) is left out and explained in the pack's `README.txt` and on the page |
+| GIF Maker | `/gif` | GIF (palette-optimised) or animated WebP, up to 30 s, with width, frame rate, speed and crop |
+
+"Follow the subject" samples frames and scores them with libvips' attention strategy (skin tones, saturated colour and detail), then smooths the path so the crop pans gently. It is a saliency heuristic, not face recognition, so manual framing is always available.
 
 Direct links: links that are not on a supported platform are accepted when they point straight at a public media file (`.mp4`, `.mov`, `.mp3`, ...). Streaming services that use DRM or subscriptions (Netflix, Disney+, Prime Video, Spotify, ...) are refused with an explanation.
 
@@ -95,6 +103,27 @@ History is private to the browser: the client keeps a random id in localStorage 
 | `DIRECT_URLS_ENABLED` | true | Accept direct media file links |
 | `FILE_TTL_MINUTES` | 60 | How long uploads and results are kept |
 
+### AI services (optional)
+
+Subtitles, transcripts and the Creator Pack's titles, descriptions and hashtags use real AI services. Nothing is simulated: without a key those features say they are unavailable (`AI_UNAVAILABLE`), and the Creator Pack skips them with a note. Keys stay on the server; `/api/config` only reports which provider and model are active.
+
+| Variable | Default | What it does |
+|----------|---------|--------------|
+| `TRANSCRIBE_PROVIDER` | `auto` | `openai`, `groq`, `deepgram`, `none`, or `auto` (the first of those with a key) |
+| `LLM_PROVIDER` | `auto` | `anthropic`, `openai`, `groq`, `none`, or `auto` (the first of those with a key) |
+| `OPENAI_API_KEY` | | Speech-to-text (Whisper API) and/or text. [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| `GROQ_API_KEY` | | Fast, cheap Whisper and/or text (no image input). [console.groq.com/keys](https://console.groq.com/keys) |
+| `DEEPGRAM_API_KEY` | | Speech-to-text only. [console.deepgram.com](https://console.deepgram.com) |
+| `ANTHROPIC_API_KEY` | | Text only (Claude reads the transcript and three frames). [console.anthropic.com](https://console.anthropic.com) |
+| `OPENAI_TRANSCRIBE_MODEL` | `whisper-1` | Must support `verbose_json` with word timestamps |
+| `GROQ_TRANSCRIBE_MODEL` | `whisper-large-v3-turbo` | |
+| `DEEPGRAM_MODEL` | `nova-3` | |
+| `ANTHROPIC_MODEL` | `claude-opus-5-5` | Called with structured output and Anthropic's server-side fallback for declined requests |
+| `OPENAI_LLM_MODEL` | `gpt-4.1-mini` | Any chat model with JSON mode and image input |
+| `GROQ_LLM_MODEL` | `llama-3.3-70b-versatile` | |
+
+The cheapest full setup is one `OPENAI_API_KEY` (speech and text) or `GROQ_API_KEY` plus `ANTHROPIC_API_KEY`. Audio is sent as 16 kHz mono MP3 in 10-minute chunks, so a 60-minute video is 6 requests. The AI suggestions are told to use only what the transcript and frames show, and the page and pack label them as drafts to review. Subtitle and Creator Pack jobs are limited to 15 per hour per IP because they cost money per request.
+
 The background queue is Agenda on the same MongoDB, so no Redis is needed. Video encoding is CPU-bound: Render's free instance (0.1 CPU, 512 MB) can run it but is very slow, so use at least **Starter**, and **Standard** (1 CPU, 2 GB) for comfortable 1080p work. Uploads and results live on the instance's disk and are deleted after `FILE_TTL_MINUTES`, so the API must stay a single instance (or move files to object storage first).
 
 ## Security and limits
@@ -103,6 +132,7 @@ The background queue is Agenda on the same MongoDB, so no Redis is needed. Video
 - Links must be `http(s)` URLs on a supported platform (allowlist; blocks SSRF to internal hosts). yt-dlp runs with its generic extractor disabled and gallery-dl ignores direct-link files, so a post can't point the server at an arbitrary URL.
 - yt-dlp, gallery-dl and ffmpeg are always spawned with argument arrays, never through a shell.
 - Every upload and download is probed with ffprobe before use. ffmpeg/ffprobe only ever read local files (`-protocol_whitelist file,pipe`) and only through a fixed list of demuxers (`-format_whitelist`), so playlist tricks (HLS, concat) in a fake "video" can't make ffmpeg read other files or URLs.
+- Subtitle text goes into an ASS file with braces and backslashes neutralised, and is drawn by libass from a relative path, so it can't inject filters or override tags. Thumbnail text is XML-escaped into SVG.
 - Video jobs: at most 20 waiting or running in total and 4 per browser; 30 uploads and 40 tool jobs per 10 minutes per IP.
 - Rate limits (stored in MongoDB, shared by all instances): 20 fetches/min, 40 downloads/10 min, 20 background removals/10 min per IP. 429 responses include `Retry-After`.
 - Queue caps: at most 30 download and 20 background-removal jobs waiting or running at once; beyond that the API answers `503 SERVER_BUSY`.
