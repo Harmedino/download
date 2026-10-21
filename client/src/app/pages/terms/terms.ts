@@ -37,7 +37,7 @@ import { RouterLink } from '@angular/router';
 
       <h2 class="mt-6 text-lg font-semibold text-zinc-900 dark:text-white">5. No affiliation, no warranty</h2>
       <p class="mt-2">
-        SnapGrab is not affiliated with TikTok, Instagram, YouTube, Facebook, X, Pinterest or Reddit. The service is provided "as is",
+        SnapGrab is not affiliated with any of the platforms it supports. The service is provided "as is",
         without warranties of any kind, and may stop working for a platform at any time.
       </p>
 

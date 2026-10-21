@@ -1,6 +1,24 @@
 import { AppError } from '../middleware/errors.js';
 
-export const PLATFORMS = ['tiktok', 'instagram', 'youtube', 'facebook', 'twitter', 'pinterest', 'reddit'] as const;
+export const PLATFORMS = [
+  'tiktok',
+  'instagram',
+  'youtube',
+  'facebook',
+  'twitter',
+  'pinterest',
+  'reddit',
+  'vimeo',
+  'dailymotion',
+  'twitch',
+  'soundcloud',
+  'linkedin',
+  'tumblr',
+  'snapchat',
+  'bluesky',
+  'streamable',
+  'imgur',
+] as const;
 export type Platform = (typeof PLATFORMS)[number];
 
 const HOSTS: Record<Platform, Array<string | RegExp>> = {
@@ -11,6 +29,16 @@ const HOSTS: Record<Platform, Array<string | RegExp>> = {
   twitter: ['twitter.com', 'x.com'],
   pinterest: [/^(?:.+\.)?pinterest\.(?:com|ca|de|fr|es|it|jp|ru|se|nz|ch|at|cl|pt|ie|dk|ph|co\.uk|co\.kr|com\.au|com\.mx)$/, 'pin.it'],
   reddit: ['reddit.com', 'redd.it'],
+  vimeo: ['vimeo.com'],
+  dailymotion: ['dailymotion.com', 'dai.ly'],
+  twitch: ['twitch.tv'],
+  soundcloud: ['soundcloud.com'],
+  linkedin: ['linkedin.com'],
+  tumblr: ['tumblr.com'],
+  snapchat: ['snapchat.com'],
+  bluesky: ['bsky.app'],
+  streamable: ['streamable.com'],
+  imgur: ['imgur.com'],
 };
 
 const MAX_URL_LENGTH = 2048;
@@ -61,7 +89,7 @@ export function validateMediaUrl(input: unknown): { url: string; platform: Platf
     throw new AppError(
       400,
       'UNSUPPORTED_PLATFORM',
-      'That site is not supported. Try a link from TikTok, Instagram, YouTube, Facebook, X/Twitter, Pinterest or Reddit.',
+      'That site is not supported yet. Try a link from YouTube, TikTok, Instagram, Facebook, X/Twitter or another site listed on the home page.',
     );
   }
 
