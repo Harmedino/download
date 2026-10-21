@@ -8,6 +8,7 @@ import { HistoryService } from '../../core/history.service';
 import { MediaStateService } from '../../core/media-state.service';
 import { PLATFORM_NAMES, detectPlatform, looksLikeUrl } from '../../core/platform';
 import type { HistoryEntry } from '../../core/models';
+import { AdSlot } from '../../shared/ad-slot';
 import { ErrorBanner } from '../../shared/error-banner';
 import { PlatformIcon } from '../../shared/platform-icon';
 import { Spinner } from '../../shared/spinner';
@@ -15,7 +16,7 @@ import { Spinner } from '../../shared/spinner';
 @Component({
   selector: 'app-home',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlatformIcon, Spinner, ErrorBanner],
+  imports: [AdSlot, PlatformIcon, Spinner, ErrorBanner],
   templateUrl: './home.html',
 })
 export class Home {
