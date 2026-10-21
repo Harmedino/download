@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { AppError } from '../middleware/errors.js';
 import { trackExpression, trackSubject, type TrackPoint } from '../services/tracking.js';
 import { clampRange, fileId, requireVideo, seconds } from './common.js';
+import { cuesSchema, subtitleStyleSchema } from '../services/subtitles.js';
 import { editSchema, renderEdit, textSchema } from './edit.js';
+import { assFilter } from './subtitles.js';
 import { baseName, defineTool } from './types.js';
 
 /** Upload guidance per platform: all 9:16; the longest clip each accepts as a short-form video. */
@@ -24,6 +26,8 @@ const schema = z.object({
   /** Output height: 1920 (1080x1920) or 1280 (720x1280). */
   height: z.union([z.literal(1920), z.literal(1280)]).default(1920),
   texts: z.array(textSchema).max(10).default([]),
+  /** Subtitle cues on the source timeline (from the Subtitle Generator) to burn in. */
+  subtitles: z.object({ cues: cuesSchema, style: subtitleStyleSchema.default(subtitleStyleSchema.parse({ position: 'middle' })) }).optional(),
 });
 
 export type ShortsParams = z.infer<typeof schema>;
@@ -62,9 +66,15 @@ export const shortsTool = defineTool({
     });
     const size = { width: p.height === 1920 ? 1080 : 720, height: p.height };
     const offset = track ? 25 : 0;
+    // Cues are on the source timeline; the short starts at `start`.
+    const cues = (p.subtitles?.cues ?? [])
+      .filter((c) => c.end > start && c.start < end)
+      .map((c) => ({ text: c.text, start: Math.max(0, c.start - start), end: Math.min(end, c.end) - start }));
+    const extraFilter = cues.length ? await assFilter(outDir, cues, p.subtitles!.style, size.width, size.height) : undefined;
     const { path: out } = await renderEdit(params, [input!], outDir, 'short.mp4', (pct) => report(offset + pct * ((100 - offset) / 100), 'Rendering vertical video'), {
       cropX,
       size,
+      extraFilter,
     });
     const warnings =
       i.height < size.height * 0.56 * 0.9 && p.cropMode !== 'blur'

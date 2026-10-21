@@ -59,6 +59,7 @@ export function createApp() {
   app.use('/api/files', requireDb, limits.files(), filesRouter);
   app.use('/api/config', configRouter);
   app.use('/api/media', requireDb, mediaRouter); // upload limit inside, before multer
+  app.use(['/api/tools/subtitles', '/api/tools/creator-pack'], limits.ai());
   app.use('/api/tools', requireDb, limits.tools(), toolsRouter);
   app.use('/api/history', requireDb, limits.jobs(), historyRouter);
 

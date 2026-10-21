@@ -20,5 +20,7 @@ export const TOOL_LINKS: ToolLink[] = [
   { path: '/frames', label: 'Frame Extractor', description: 'Save full-resolution frames, frames at an interval, or a contact sheet.', tool: 'frames', icon: 'M3 5h18v14H3zM3 9h18M3 15h18M8 5v14M16 5v14' },
   { path: '/thumbnail', label: 'Thumbnail Editor', description: 'Crop an image or frame, enhance it and add bold text.', tool: 'thumbnail', icon: 'M4 5h16v14H4zM8 15l3-3 2 2 3-4 2 5M8 9h.01' },
   { path: '/gif', label: 'GIF Maker', description: 'Turn part of a video into a looping GIF or animated WebP.', tool: 'gif', icon: 'M4 5h16v14H4zM9 10H7v4h2v-1M12 10v4M15 14v-4h2M15 12h1.5' },
+  { path: '/subtitles', label: 'Subtitle Generator', description: 'Speech recognition to editable subtitles; style them, export SRT/VTT or burn them in.', tool: 'subtitles', icon: 'M3 5h18v14H3zM7 12h4M13 12h4M7 15h7M16 15h1' },
+  { path: '/creator-pack', label: 'Creator Pack', description: 'Video, thumbnail, audio, subtitles, transcript, frames and AI titles in one ZIP.', tool: 'creator-pack', icon: 'M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8' },
   { path: '/remove-bg', label: 'Remove BG', description: 'Remove the background from an image.', tool: null, icon: 'M4 16l4-4 3 3 5-6 4 5M4 4h16v16H4z' },
 ];

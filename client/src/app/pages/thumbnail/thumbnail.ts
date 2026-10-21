@@ -196,7 +196,7 @@ const SHAPES: Array<{ id: string; label: string; ratio: number | null }> = [
                       aria-label="Font"
                     >
                       @for (f of fonts; track f.id) {
-                        <option [value]="f.id">{{ f.label }}</option>
+                        <option [value]="f.id" [selected]="f.id === t.font">{{ f.label }}</option>
                       }
                     </select>
                     <input

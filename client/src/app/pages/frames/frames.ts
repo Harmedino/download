@@ -130,7 +130,7 @@ type ImageFormat = 'jpg' | 'png' | 'webp';
                     (change)="every.set(+$any($event.target).value)"
                   >
                     @for (e of intervals; track e) {
-                      <option [value]="e">{{ e }} second{{ e === 1 ? '' : 's' }}</option>
+                      <option [value]="e" [selected]="e === every()">{{ e }} second{{ e === 1 ? '' : 's' }}</option>
                     }
                   </select>
                 </label>
@@ -149,7 +149,7 @@ type ImageFormat = 'jpg' | 'png' | 'webp';
                       (change)="columns.set(+$any($event.target).value)"
                     >
                       @for (n of [2, 3, 4, 5, 6, 8]; track n) {
-                        <option [value]="n">{{ n }}</option>
+                        <option [value]="n" [selected]="n === columns()">{{ n }}</option>
                       }
                     </select>
                   </label>
@@ -161,7 +161,7 @@ type ImageFormat = 'jpg' | 'png' | 'webp';
                       (change)="rows.set(+$any($event.target).value)"
                     >
                       @for (n of [1, 2, 3, 4, 5, 6, 8, 10]; track n) {
-                        <option [value]="n">{{ n }}</option>
+                        <option [value]="n" [selected]="n === rows()">{{ n }}</option>
                       }
                     </select>
                   </label>

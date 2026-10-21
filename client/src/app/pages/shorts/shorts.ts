@@ -10,8 +10,10 @@ import {
   untracked,
 } from '@angular/core';
 import { ApiService } from '../../core/api.service';
+import { ConfigService } from '../../core/config.service';
 import { JobTracker } from '../../core/job-tracker';
 import type { MediaFile } from '../../core/models';
+import type { Cue } from '../../core/subtitles';
 import { formatTime } from '../../core/time';
 import { CompositionPreview, type PreviewSettings } from '../../shared/composition-preview';
 import { JobPanel } from '../../shared/job-panel';
@@ -142,6 +144,12 @@ const PLATFORMS: Array<{ id: Platform; label: string; maxSeconds: number }> = [
                   (input)="caption.set($any($event.target).value)"
                 />
               </label>
+              @if (config.transcription() && s.info?.hasAudio) {
+                <label class="flex items-start gap-2 text-sm">
+                  <input type="checkbox" class="mt-1 accent-violet-600" [checked]="withSubs()" (change)="withSubs.set($any($event.target).checked)" />
+                  <span>Add subtitles<span class="block text-xs text-zinc-500 dark:text-zinc-400">Generated with speech recognition and burned in, centred. To edit them first, use the Subtitle Generator.</span></span>
+                </label>
+              }
               <label class="block">
                 <span [class]="ui.label">Quality</span>
                 <select
@@ -156,10 +164,10 @@ const PLATFORMS: Array<{ id: Platform; label: string; maxSeconds: number }> = [
               <button
                 type="button"
                 [class]="ui.primary"
-                [disabled]="job.busy() || tooLong() || end() <= start()"
+                [disabled]="job.busy() || subs.busy() || tooLong() || end() <= start()"
                 (click)="exportShort()"
               >
-                @if (job.busy()) {
+                @if (job.busy() || subs.busy()) {
                   <app-spinner />
                 }
                 Export {{ fmt(end() - start()) }} short
@@ -185,6 +193,9 @@ const PLATFORMS: Array<{ id: Platform; label: string; maxSeconds: number }> = [
           </div>
         </div>
         <div class="mx-auto mt-6 max-w-2xl">
+          @if (subs.state() !== 'idle' && subs.state() !== 'done') {
+            <app-job-panel [tracker]="subs" [showPreview]="false" (retry)="exportShort()" />
+          }
           <app-job-panel [tracker]="job" doneText="Your short is ready." (retry)="exportShort()" />
         </div>
       }
@@ -193,6 +204,7 @@ const PLATFORMS: Array<{ id: Platform; label: string; maxSeconds: number }> = [
 })
 export class Shorts {
   private readonly api = inject(ApiService);
+  protected readonly config = inject(ConfigService);
   readonly fileId = input<string | undefined>();
   protected readonly ui = ui;
   protected readonly platforms = PLATFORMS;
@@ -219,7 +231,12 @@ export class Shorts {
   protected readonly centerX = signal(0.5);
   protected readonly caption = signal('');
   protected readonly height = signal<1920 | 1280>(1920);
+  protected readonly withSubs = signal(false);
   protected readonly job = new JobTracker(this.api);
+  /** Speech recognition for the optional subtitles, run before the render. */
+  protected readonly subs = new JobTracker(this.api);
+  /** Cues for the current source, so a re-export doesn't transcribe again. */
+  private cues: Cue[] | null = null;
   protected readonly fmt = formatTime;
 
   protected readonly platformInfo = computed(() =>
@@ -281,9 +298,14 @@ export class Shorts {
         this.centerX.set(0.5);
         this.video.set(null);
         this.job.reset();
+        this.subs.reset();
+        this.cues = null;
       });
     });
-    inject(DestroyRef).onDestroy(() => this.job.cancel());
+    inject(DestroyRef).onDestroy(() => {
+      this.job.cancel();
+      this.subs.cancel();
+    });
   }
 
   protected dragBand(ev: PointerEvent, el: HTMLElement): void {
@@ -311,6 +333,15 @@ export class Shorts {
   protected exportShort(): void {
     const s = this.source();
     if (!s) return;
+    if (this.withSubs() && !this.cues) {
+      this.job.reset();
+      this.subs.run(this.api.startTool('subtitles', { fileId: s.id }), (j) => {
+        this.cues = (j.result as { cues?: Cue[] } | null)?.cues ?? [];
+        this.exportShort();
+      });
+      return;
+    }
+    const cues = this.withSubs() ? (this.cues ?? []).filter((c) => c.end > this.start() && c.start < this.end()) : [];
     const caption = this.caption().trim();
     this.job.run(
       this.api.startTool('shorts', {
@@ -334,6 +365,7 @@ export class Shorts {
               },
             ]
           : [],
+        subtitles: cues.length ? { cues, style: { position: 'middle', size: 0.04 } } : undefined,
       }),
     );
   }

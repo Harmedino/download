@@ -139,6 +139,8 @@ export const limits = {
   removeBgImage: () => limiter({ name: 'rbg-image', windowMs: 10 * MIN, limit: 20, message: "You've removed a lot of backgrounds. Please wait a few minutes." }),
   mediaUpload: () => limiter({ name: 'media-upload', windowMs: 10 * MIN, limit: 30, message: "You've uploaded a lot of files. Please wait a few minutes." }),
   tools: () => limiter({ name: 'tools', windowMs: 10 * MIN, limit: 40, message: "You've started a lot of video jobs. Please wait a few minutes." }),
+  /** Speech-to-text and LLM calls cost the site owner money per request. */
+  ai: () => limiter({ name: 'ai', windowMs: 60 * MIN, limit: 15, message: "You've used the AI tools a lot in the last hour. Please try again later." }),
   /** Job polling runs about once a second per open job. */
   jobs: () => limiter({ name: 'jobs', windowMs: MIN, limit: 300, message: 'Too many status checks. Please slow down.' }),
   /** Video previews make several Range requests per file. */
