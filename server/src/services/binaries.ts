@@ -16,7 +16,7 @@ const BINARIES: Record<BinaryName, { path: () => string; args: string[]; install
   'yt-dlp': {
     path: () => env.YTDLP_PATH,
     args: ['--version'],
-    installHint: 'Install yt-dlp: `pip install -U yt-dlp` or download from https://github.com/yt-dlp/yt-dlp/releases, then set YTDLP_PATH if it is not on PATH.',
+    installHint: 'Install yt-dlp: `pip install -U "yt-dlp[default]"` or download from https://github.com/yt-dlp/yt-dlp/releases, then set YTDLP_PATH if it is not on PATH.',
   },
   'gallery-dl': {
     path: () => env.GALLERYDL_PATH,

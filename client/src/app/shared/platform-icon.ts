@@ -10,10 +10,20 @@ const COLORS: Record<Platform, string> = {
   twitter: 'bg-black text-white ring-1 ring-white/20',
   pinterest: 'bg-red-700 text-white',
   reddit: 'bg-orange-600 text-white',
+  vimeo: 'bg-sky-500 text-white',
+  dailymotion: 'bg-blue-700 text-white',
+  twitch: 'bg-purple-600 text-white',
+  soundcloud: 'bg-orange-500 text-white',
+  linkedin: 'bg-sky-700 text-white',
+  tumblr: 'bg-slate-800 text-white',
+  snapchat: 'bg-yellow-300 text-black',
+  bluesky: 'bg-blue-500 text-white',
+  streamable: 'bg-indigo-600 text-white',
+  imgur: 'bg-emerald-600 text-white',
 };
 
-/** Simplified platform glyphs (24x24 viewBox, drawn for this app). */
-const PATHS: Record<Platform, string> = {
+/** Simplified platform glyphs (24x24 viewBox, drawn for this app). Platforms without one show their initial. */
+const PATHS: Partial<Record<Platform, string>> = {
   tiktok: 'M14 3h3a4 4 0 0 0 4 4v3a7 7 0 0 1-4-1.3V15a6 6 0 1 1-6-6v3a3 3 0 1 0 3 3z',
   instagram:
     'M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm5 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm5.5-4.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z',
@@ -44,8 +54,12 @@ const PATHS: Record<Platform, string> = {
           @if (p === 'youtube') {
             <rect x="2.5" y="5.5" width="19" height="13" rx="4" fill="currentColor" />
             <path [attr.d]="paths[p]" fill="#dc2626" />
-          } @else {
+          } @else if (paths[p]) {
             <path [attr.d]="paths[p]" fill-rule="evenodd" />
+          } @else {
+            <text x="12" y="12" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="700" font-family="system-ui, sans-serif">
+              {{ names[p][0] }}
+            </text>
           }
         </svg>
       </span>

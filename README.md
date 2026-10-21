@@ -1,6 +1,6 @@
 # SnapGrab
 
-Paste a link from a public TikTok, Instagram, YouTube, Facebook, X/Twitter, Pinterest or Reddit post, preview it, and download the video or image. You can also remove the background from an image (uploaded, or straight from a fetched post). Background removal works on images only.
+Paste a link from a public YouTube, TikTok, Instagram, Facebook, X/Twitter, Pinterest, Reddit, Vimeo, Dailymotion, Twitch, SoundCloud, LinkedIn, Tumblr, Snapchat, Bluesky, Streamable or Imgur post, preview it, and download the video, audio or image. You can also remove the background from an image (uploaded, or straight from a fetched post). Background removal works on images only.
 
 > Work in progress. Full setup and deployment docs land in phase 8.
 
@@ -13,7 +13,7 @@ Paste a link from a public TikTok, Instagram, YouTube, Facebook, X/Twitter, Pint
 
 ## Quick start (local)
 
-Requirements: Node 22.22.3+ or 24.15+, MongoDB, `yt-dlp`, `gallery-dl`, `ffmpeg`.
+Requirements: Node 22.22.3+ or 24.15+, MongoDB, `yt-dlp` (install with `pip install -U "yt-dlp[default]"` so YouTube works), `gallery-dl`, `ffmpeg`.
 
 ```bash
 # API
@@ -71,7 +71,7 @@ AdSense fills a spot when it has a slot id for it; otherwise Adsterra does. With
 ## Security and limits
 
 - Public posts only: SnapGrab never asks for or stores social media logins or cookies.
-- Links must be `http(s)` URLs on the seven supported platforms (allowlist; blocks SSRF to internal hosts). yt-dlp runs with its generic extractor disabled and gallery-dl ignores direct-link files, so a post can't point the server at an arbitrary URL.
+- Links must be `http(s)` URLs on a supported platform (allowlist; blocks SSRF to internal hosts). yt-dlp runs with its generic extractor disabled and gallery-dl ignores direct-link files, so a post can't point the server at an arbitrary URL.
 - yt-dlp, gallery-dl and ffmpeg are always spawned with argument arrays, never through a shell.
 - Rate limits (stored in MongoDB, shared by all instances): 20 fetches/min, 40 downloads/10 min, 20 background removals/10 min per IP. 429 responses include `Retry-After`.
 - Queue caps: at most 30 download and 20 background-removal jobs waiting or running at once; beyond that the API answers `503 SERVER_BUSY`.

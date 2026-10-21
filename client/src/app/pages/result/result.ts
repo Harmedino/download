@@ -104,7 +104,8 @@ export class Result {
     const formats = res.metadata.formats;
     // Default to 720p when available: a good balance of size and quality on phones.
     this.quality.set(formats.find((f) => f.id === '720p')?.id ?? formats.at(-1)?.id ?? null);
-    this.audioOnly.set(false);
+    // Audio-only sources such as SoundCloud have no video qualities, so default to the MP3 download.
+    this.audioOnly.set(res.metadata.kind === 'video' && !formats.length && res.metadata.hasAudio && res.metadata.extractor === 'yt-dlp');
   }
 
   protected retryLoad(): void {

@@ -16,11 +16,25 @@ describe('detectPlatform', () => {
     ['www.pinterest.co.uk', 'pinterest'],
     ['old.reddit.com', 'reddit'],
     ['v.redd.it', 'reddit'],
+    ['vimeo.com', 'vimeo'],
+    ['player.vimeo.com', 'vimeo'],
+    ['www.dailymotion.com', 'dailymotion'],
+    ['dai.ly', 'dailymotion'],
+    ['clips.twitch.tv', 'twitch'],
+    ['m.twitch.tv', 'twitch'],
+    ['soundcloud.com', 'soundcloud'],
+    ['on.soundcloud.com', 'soundcloud'],
+    ['www.linkedin.com', 'linkedin'],
+    ['someblog.tumblr.com', 'tumblr'],
+    ['www.snapchat.com', 'snapchat'],
+    ['bsky.app', 'bluesky'],
+    ['streamable.com', 'streamable'],
+    ['i.imgur.com', 'imgur'],
   ])('%s -> %s', (host, platform) => {
     expect(detectPlatform(host)).toBe(platform);
   });
 
-  it.each(['example.com', 'notyoutube.com', 'youtube.com.evil.io', 'reddit.co', 'localhost', '127.0.0.1'])('rejects %s', (host) => {
+  it.each(['example.com', 'notyoutube.com', 'youtube.com.evil.io', 'reddit.co', 'vimeo.com.evil.io', 'notimgur.com', 'twitch.tv.example', 'localhost', '127.0.0.1'])('rejects %s', (host) => {
     expect(detectPlatform(host)).toBeNull();
   });
 });

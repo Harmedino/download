@@ -35,6 +35,9 @@ export function mapExtractorError(stderr: string): AppError {
   const test = (...needles: Array<string | RegExp>) =>
     needles.some((n) => (typeof n === 'string' ? t.includes(n) : n.test(t)));
 
+  // YouTube asks datacenter IPs to prove they are not a bot; that is a server problem, not a private video.
+  if (test("confirm you're not a bot", 'confirm you are not a bot'))
+    return new AppError(502, 'UPSTREAM_BLOCKED', 'The platform is blocking our server right now. Please try again later.');
   if (test('private', 'login required', 'log in', 'sign in to confirm', 'requires authentication', 'cookies', 'age-restricted', 'inappropriate for some users', 'not authorized'))
     return new AppError(403, 'PRIVATE_POST', "This post is private or requires a login, so it can't be downloaded. Only public posts are supported.");
   if (test('unsupported url', 'no suitable extractor'))
