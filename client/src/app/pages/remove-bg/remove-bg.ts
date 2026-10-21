@@ -7,7 +7,6 @@ import { type BgMode, canvasToBlob, composeToCanvas, loadImage, saveBlob } from 
 import { CompareSlider } from '../../shared/compare-slider';
 import { ErrorBanner } from '../../shared/error-banner';
 import { ProgressBar } from '../../shared/progress-bar';
-import { RemoveBgTabs } from '../../shared/remove-bg-tabs';
 import { Spinner } from '../../shared/spinner';
 
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
@@ -26,7 +25,7 @@ interface Source {
 @Component({
   selector: 'app-remove-bg',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CompareSlider, ErrorBanner, ProgressBar, RemoveBgTabs, Spinner],
+  imports: [CompareSlider, ErrorBanner, ProgressBar, Spinner],
   templateUrl: './remove-bg.html',
 })
 export class RemoveBg {
