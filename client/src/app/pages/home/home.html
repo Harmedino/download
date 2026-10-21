@@ -1,0 +1,119 @@
+<section class="mx-auto max-w-3xl px-4 pt-10 sm:pt-16">
+  <div class="text-center">
+    <h1 class="text-3xl font-extrabold tracking-tight sm:text-5xl">
+      Grab any public post.
+      <span class="bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text text-transparent">Instantly.</span>
+    </h1>
+    <p class="mx-auto mt-3 max-w-xl text-zinc-600 dark:text-zinc-400">
+      Paste a link from TikTok, Instagram, YouTube, Facebook, X, Pinterest or Reddit to preview and download the video or image.
+    </p>
+  </div>
+
+  <form class="mt-8" (submit)="$event.preventDefault(); submit()" novalidate>
+    <label for="link" class="sr-only">Post link</label>
+    <div
+      class="flex flex-col gap-2 rounded-3xl border border-zinc-200 bg-white p-2 shadow-xl shadow-violet-500/5 focus-within:border-violet-500 sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <div class="flex min-w-0 flex-1 items-center gap-3 pl-2">
+        <app-platform-icon [platform]="platform()" [size]="40" />
+        <input
+          #linkInput
+          id="link"
+          type="url"
+          inputmode="url"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Paste a link, e.g. https://www.tiktok.com/@user/video/…"
+          class="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-zinc-400 sm:text-lg dark:placeholder:text-zinc-500"
+          [value]="url()"
+          (input)="onInput(linkInput.value)"
+          [attr.aria-invalid]="!!error()"
+          aria-describedby="platform-hint"
+        />
+        @if (clipboardSupported && !url()) {
+          <button
+            type="button"
+            (click)="pasteFromClipboard()"
+            class="hidden shrink-0 rounded-xl px-3 py-2 text-sm font-medium text-violet-600 hover:bg-violet-500/10 sm:inline-flex dark:text-violet-300"
+          >
+            Paste
+          </button>
+        }
+      </div>
+      <button
+        type="submit"
+        [disabled]="!canSubmit()"
+        class="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 text-base font-semibold text-white shadow-lg shadow-fuchsia-600/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        @if (loading()) {
+          <app-spinner />
+          <span>Fetching…</span>
+        } @else {
+          <span>Fetch</span>
+        }
+      </button>
+    </div>
+    <p id="platform-hint" class="mt-2 h-5 pl-3 text-sm text-zinc-500 dark:text-zinc-400" aria-live="polite">
+      @if (platformName()) {
+        Detected: <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ platformName() }}</span>
+      } @else if (url().trim()) {
+        We don't recognise this site yet.
+      }
+    </p>
+  </form>
+
+  @if (error()) {
+    <div class="mt-2">
+      <app-error-banner [error]="error()" [retryable]="error()?.code !== 'INVALID_URL' && error()?.code !== 'UNSUPPORTED_PLATFORM'" (retry)="submit()" />
+    </div>
+  }
+
+  <ul class="mt-6 flex flex-wrap justify-center gap-2 text-xs text-zinc-500 dark:text-zinc-400" aria-label="Supported platforms">
+    @for (p of platforms; track p) {
+      <li class="rounded-full border border-zinc-200 px-3 py-1 dark:border-zinc-800">{{ p }}</li>
+    }
+  </ul>
+</section>
+
+@if (history.count() > 0) {
+  <section class="mx-auto mt-14 max-w-3xl px-4" aria-labelledby="recent-heading">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 id="recent-heading" class="text-lg font-semibold">Recent downloads</h2>
+      <button type="button" class="text-sm text-zinc-500 hover:text-red-500 dark:text-zinc-400" (click)="history.clear()">Clear</button>
+    </div>
+    <p class="mb-3 text-xs text-zinc-500 dark:text-zinc-400">Stored only in this browser. Files stay on our server for 1 hour.</p>
+    <ul class="divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+      @for (e of history.entries(); track e.id) {
+        <li class="flex items-center gap-3 p-3">
+          <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-zinc-200 dark:bg-zinc-800">
+            @if (e.thumbnail) {
+              <img [src]="e.thumbnail" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+            }
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium">{{ e.title }}</p>
+            <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">
+              {{ e.fileName }} · {{ formatBytes(e.size) }} · {{ timeAgo(e.createdAt) }}
+            </p>
+          </div>
+          @if (expired(e)) {
+            <button type="button" (click)="reopen(e)" class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-violet-600 hover:bg-violet-500/10 dark:text-violet-300">
+              Fetch again
+            </button>
+          } @else {
+            <a [href]="e.fileUrl" class="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-violet-600 hover:bg-violet-500/10 dark:text-violet-300">Download</a>
+          }
+          <button
+            type="button"
+            (click)="history.remove(e.id)"
+            class="shrink-0 rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+            aria-label="Remove from history"
+          >
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </li>
+      }
+    </ul>
+  </section>
+}

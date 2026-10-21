@@ -1,0 +1,210 @@
+<section class="mx-auto max-w-5xl px-4 pt-6 sm:pt-10">
+  <a routerLink="/" class="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white">
+    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+    New link
+  </a>
+
+  @if (loading()) {
+    <div class="mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" aria-busy="true" aria-label="Loading post">
+      <div class="aspect-video animate-pulse rounded-3xl bg-zinc-200 dark:bg-zinc-800"></div>
+      <div class="space-y-3">
+        <div class="h-7 w-3/4 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"></div>
+        <div class="h-4 w-1/2 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800"></div>
+        <div class="h-12 w-full animate-pulse rounded-2xl bg-zinc-200 dark:bg-zinc-800"></div>
+      </div>
+    </div>
+  } @else if (loadError()) {
+    <div class="mt-6">
+      <app-error-banner [error]="loadError()" [retryable]="true" (retry)="retryLoad()" />
+    </div>
+  } @else if (meta(); as m) {
+    <div class="mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
+      <!-- Preview -->
+      <div class="relative mx-auto w-full overflow-hidden rounded-3xl bg-zinc-200 dark:bg-zinc-900" [class]="m.portrait ? 'aspect-[9/16] max-h-[70vh] max-w-sm' : 'aspect-video'">
+        @if (m.thumbnail) {
+          <img [src]="m.thumbnail" [alt]="m.title" class="h-full w-full object-cover" referrerpolicy="no-referrer" />
+        } @else {
+          <div class="flex h-full w-full items-center justify-center text-zinc-400">No preview available</div>
+        }
+        @if (m.kind === 'video') {
+          <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur">
+              <svg viewBox="0 0 24 24" class="ml-1 h-7 w-7" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            </span>
+          </span>
+        }
+        @if (m.duration) {
+          <span class="absolute right-3 bottom-3 rounded-md bg-black/70 px-2 py-0.5 text-xs font-medium text-white tabular-nums">{{ formatDuration(m.duration) }}</span>
+        }
+        @if (isCarousel()) {
+          <span class="absolute top-3 right-3 rounded-md bg-black/70 px-2 py-0.5 text-xs font-medium text-white">1 / {{ m.items.length }}</span>
+        }
+      </div>
+
+      <!-- Details + actions -->
+      <div class="flex min-w-0 flex-col">
+        <div class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+          <app-platform-icon [platform]="data()!.platform" [size]="24" />
+          <span>{{ platformName() }}</span>
+          @if (m.uploader) {
+            <span aria-hidden="true">·</span>
+            <span class="truncate">{{ m.uploader }}</span>
+          }
+        </div>
+        <h1 class="mt-2 line-clamp-3 text-xl font-bold break-words sm:text-2xl">{{ m.title }}</h1>
+
+        <dl class="mt-4 grid grid-cols-3 gap-2 text-sm">
+          <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-900">
+            <dt class="text-xs text-zinc-500 dark:text-zinc-400">Type</dt>
+            <dd class="font-medium capitalize">{{ m.kind }}</dd>
+          </div>
+          <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-900">
+            <dt class="text-xs text-zinc-500 dark:text-zinc-400">{{ isCarousel() ? 'Items' : 'Duration' }}</dt>
+            <dd class="font-medium tabular-nums">{{ isCarousel() ? m.items.length : formatDuration(m.duration) || '—' }}</dd>
+          </div>
+          <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-900">
+            <dt class="text-xs text-zinc-500 dark:text-zinc-400">Size</dt>
+            <dd class="font-medium tabular-nums">{{ displaySize() || '—' }}</dd>
+          </div>
+        </dl>
+
+        @if (!isCarousel()) {
+          @if (isVideo() && m.formats.length) {
+            <fieldset class="mt-6" [disabled]="main.busy()">
+              <legend class="mb-2 text-sm font-medium">Quality</legend>
+              <div class="flex flex-wrap gap-2" role="radiogroup">
+                @for (f of m.formats; track f.id) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="!audioOnly() && quality() === f.id"
+                    (click)="quality.set(f.id); audioOnly.set(false)"
+                    class="rounded-xl border px-4 py-2 text-sm font-medium transition"
+                    [class]="!audioOnly() && quality() === f.id
+                      ? 'border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-200'
+                      : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600'"
+                  >
+                    {{ f.label }}
+                    @if (f.filesize) {
+                      <span class="ml-1 text-xs opacity-60">{{ formatBytes(f.filesize) }}</span>
+                    }
+                  </button>
+                }
+                @if (m.hasAudio && m.extractor === 'yt-dlp') {
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="audioOnly()"
+                    (click)="audioOnly.set(true)"
+                    class="rounded-xl border px-4 py-2 text-sm font-medium transition"
+                    [class]="audioOnly()
+                      ? 'border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-200'
+                      : 'border-zinc-200 hover:border-zinc-400 dark:border-zinc-800 dark:hover:border-zinc-600'"
+                  >
+                    Audio only (MP3)
+                  </button>
+                }
+              </div>
+            </fieldset>
+          }
+
+          <div class="mt-6 space-y-3">
+            <button
+              type="button"
+              (click)="downloadMain()"
+              [disabled]="main.busy()"
+              class="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 text-base font-semibold text-white shadow-lg shadow-fuchsia-600/20 transition hover:brightness-110 disabled:opacity-60"
+            >
+              @if (main.busy()) {
+                <app-spinner />
+                <span>{{ main.state() === 'starting' ? 'Starting…' : 'Preparing your file…' }}</span>
+              } @else {
+                <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></svg>
+                <span>Download {{ audioOnly() ? 'MP3' : isVideo() ? (quality() ?? '') : 'image' }}</span>
+              }
+            </button>
+            @if (main.busy()) {
+              <app-progress-bar [value]="main.progress()" [label]="main.stage() ?? 'Queued'" />
+            }
+            @if (main.state() === 'done' && fileHref(main.job()); as href) {
+              <p class="text-sm text-emerald-600 dark:text-emerald-400">
+                Done! Your download should start automatically.
+                <a [href]="href" class="font-medium underline">Click here</a> if it didn't.
+              </p>
+            }
+            <app-error-banner [error]="main.error()" [retryable]="true" (retry)="downloadMain()" />
+          </div>
+        } @else {
+          <div class="mt-6 space-y-3">
+            <button
+              type="button"
+              (click)="downloadZip()"
+              [disabled]="zip.busy()"
+              class="inline-flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 text-base font-semibold text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
+            >
+              @if (zip.busy()) {
+                <app-spinner />
+                <span>Zipping {{ m.items.length }} items…</span>
+              } @else {
+                <span>Download all (ZIP)</span>
+              }
+            </button>
+            @if (zip.busy()) {
+              <app-progress-bar [value]="zip.progress()" [label]="zip.stage() ?? 'Queued'" />
+            }
+            @if (zip.state() === 'done' && fileHref(zip.job()); as href) {
+              <p class="text-sm text-emerald-600 dark:text-emerald-400">ZIP ready. <a [href]="href" class="font-medium underline">Download again</a></p>
+            }
+            <app-error-banner [error]="zip.error()" [retryable]="true" (retry)="downloadZip()" />
+          </div>
+        }
+
+        <p class="mt-6 text-xs text-zinc-500 dark:text-zinc-400">
+          Only download content you own or have permission to use. Files are deleted from our server after 1 hour.
+        </p>
+      </div>
+    </div>
+
+    @if (isCarousel()) {
+      <section class="mt-10" aria-labelledby="items-heading">
+        <h2 id="items-heading" class="mb-3 text-lg font-semibold">{{ m.items.length }} items in this post</h2>
+        <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          @for (item of m.items; track item.index) {
+            @let t = tracker(item.index);
+            <li class="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+              <div class="relative aspect-square bg-zinc-200 dark:bg-zinc-800">
+                @if (item.thumbnail) {
+                  <img [src]="item.thumbnail" [alt]="'Item ' + (item.index + 1)" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                }
+                <span class="absolute top-2 left-2 rounded-md bg-black/70 px-1.5 py-0.5 text-xs font-medium text-white">
+                  {{ item.index + 1 }} · {{ item.type === 'video' ? 'Video' : 'Image' }}
+                  @if (item.duration) {
+                    · {{ formatDuration(item.duration) }}
+                  }
+                </span>
+              </div>
+              <div class="space-y-2 p-2">
+                <button
+                  type="button"
+                  (click)="downloadItem(item)"
+                  [disabled]="t.busy()"
+                  class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                >
+                  @if (t.busy()) {
+                    <app-spinner sizeClass="h-4 w-4" />
+                    <span class="tabular-nums">{{ t.progress() }}%</span>
+                  } @else if (t.state() === 'done') {
+                    <span>Downloaded ✓</span>
+                  } @else {
+                    <span>Download</span>
+                  }
+                </button>
+                <app-error-banner [error]="t.error()" />
+              </div>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+</section>

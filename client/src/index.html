@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" class="dark" style="color-scheme: dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>SnapGrab</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Download public videos and images from TikTok, Instagram, YouTube, Facebook, X, Pinterest and Reddit, and remove image backgrounds." />
+    <meta name="theme-color" content="#09090b" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <script>
+      // Apply the saved theme before Angular boots to avoid a flash of the wrong theme.
+      try {
+        if (localStorage.getItem('snapgrab.theme') === 'light') {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <app-root></app-root>
+  </body>
+</html>
