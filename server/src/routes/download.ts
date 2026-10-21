@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { enqueue } from '../jobs/agenda.js';
 import type { DownloadParams } from '../jobs/processors/download.js';
 import { AppError } from '../middleware/errors.js';
+import { assertQueueCapacity } from '../middleware/queueGuard.js';
 import { parseBody } from '../middleware/validate.js';
 import { Job } from '../models/Job.js';
 import { getMetadata } from '../services/media.js';
@@ -35,6 +36,7 @@ downloadRouter.post('/', async (req, res) => {
   }
 
   const params: DownloadParams = { formatId: body.formatId, itemIndex: body.itemIndex, audioOnly: body.audioOnly };
+  await assertQueueCapacity('download');
   const job = await Job.create({ type: 'download', sourceUrl: url, platform, params });
   await enqueue('download', job._id);
   res.status(202).json({ jobId: job._id });
@@ -48,6 +50,7 @@ downloadRouter.post('/zip', async (req, res) => {
     throw new AppError(400, 'NOT_A_CAROUSEL', 'This post has a single item, so there is nothing to zip. Use the normal download instead.');
   }
   const params: DownloadParams = { zip: true };
+  await assertQueueCapacity('download');
   const job = await Job.create({ type: 'download', sourceUrl: url, platform, params });
   await enqueue('download', job._id);
   res.status(202).json({ jobId: job._id });

@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType, Types } from 'mongoose';
+import { randomObjectId } from './ids.js';
 
 export const JOB_TYPES = ['fetch', 'download', 'remove-bg-image', 'remove-bg-video'] as const;
 export const JOB_STATUSES = ['queued', 'processing', 'done', 'failed'] as const;
@@ -7,6 +8,7 @@ export type JobStatus = (typeof JOB_STATUSES)[number];
 
 const jobSchema = new Schema(
   {
+    _id: { type: Schema.Types.ObjectId, default: randomObjectId },
     type: { type: String, enum: JOB_TYPES, required: true },
     status: { type: String, enum: JOB_STATUSES, default: 'queued', index: true },
     progress: { type: Number, min: 0, max: 100, default: 0 },

@@ -1,8 +1,10 @@
 import { Schema, model, type InferSchemaType } from 'mongoose';
 import { env } from '../config/env.js';
+import { randomObjectId } from './ids.js';
 
 const fileSchema = new Schema(
   {
+    _id: { type: Schema.Types.ObjectId, default: randomObjectId },
     path: { type: String, required: true },
     /** Filename offered to the browser in Content-Disposition. */
     name: { type: String, required: true },

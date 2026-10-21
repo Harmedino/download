@@ -19,8 +19,12 @@ export const notFound: RequestHandler = (req, _res, next) => {
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const status: number = typeof err?.status === 'number' ? err.status : 500;
-  const code: string = typeof err?.code === 'string' ? err.code : 'INTERNAL_ERROR';
-  if (status >= 500) logger.error({ err }, 'Request failed');
+  // body-parser errors carry a `type` instead of our `code`.
+  const bodyCodes: Record<string, string> = { 'entity.too.large': 'BODY_TOO_LARGE', 'entity.parse.failed': 'INVALID_JSON' };
+  const code: string = typeof err?.code === 'string' ? err.code : (bodyCodes[err?.type] ?? 'INTERNAL_ERROR');
+  if (status >= 500 && status !== 503) logger.error({ err }, 'Request failed');
+  const retryAfter = err?.details?.retryAfterSeconds;
+  if (typeof retryAfter === 'number') res.setHeader('Retry-After', String(retryAfter));
   res.status(status).json({
     error: {
       code,

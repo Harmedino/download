@@ -1,6 +1,6 @@
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, filter, map, of, retry, switchMap, takeWhile, tap, throwError, timer } from 'rxjs';
+import { Observable, catchError, exhaustMap, filter, map, of, retry, switchMap, takeWhile, tap, throwError, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ApiError, toApiError } from './errors';
 import type { DownloadRequest, FetchResponse, JobView } from './models';
@@ -57,7 +57,20 @@ export class ApiService {
    */
   pollJob(id: string, intervalMs = 1000): Observable<JobView> {
     return timer(0, intervalMs).pipe(
-      switchMap(() => this.getJob(id).pipe(retry({ count: 3, delay: 1500 }))),
+      // exhaustMap: ignore ticks while a request (or its backoff) is still in flight.
+      exhaustMap(() =>
+        this.getJob(id).pipe(
+          // Ride out brief blips and rate limits instead of failing a long job; 404 is final.
+          retry({
+            count: 5,
+            delay: (err: unknown) => {
+              const e = toApiError(err);
+              if (e.status === 404) return throwError(() => e);
+              return timer(e.status === 429 ? Math.min(30, e.retryAfter ?? 10) * 1000 : 1500);
+            },
+          }),
+        ),
+      ),
       takeWhile((j) => j.status !== 'done' && j.status !== 'failed', true),
       switchMap((j) =>
         j.status === 'failed'

@@ -9,8 +9,11 @@ type Kw = Record<string, any>;
 
 const VIDEO_EXT = /^(mp4|webm|mov|m4v|mkv|gifv)$/i;
 
+/** Extractors that fetch arbitrary URLs a post links to; never follow them (SSRF). */
+const BLOCKED_CATEGORIES = new Set(['directlink', 'generic']);
+
 function baseArgs(): string[] {
-  return ['--config-ignore', '--quiet'];
+  return ['--config-ignore', '--quiet', '--filter', `category not in (${[...BLOCKED_CATEGORIES].map((c) => `'${c}'`).join(', ')})`];
 }
 
 function num(v: unknown): number | null {
@@ -28,7 +31,7 @@ export function normalizeGalleryDlJson(json: unknown): MediaMetadata {
   for (const msg of json) {
     if (!Array.isArray(msg)) continue;
     if (msg[0] === 2 && msg[1] && typeof msg[1] === 'object') post = msg[1];
-    if (msg[0] === 3 && typeof msg[1] === 'string') files.push({ url: msg[1], kw: msg[2] ?? {} });
+    if (msg[0] === 3 && typeof msg[1] === 'string' && !BLOCKED_CATEGORIES.has(msg[2]?.category)) files.push({ url: msg[1], kw: msg[2] ?? {} });
     // gallery-dl reports extractor errors as [-1, {error, message}]
     if (msg[0] === -1 && msg[1]) throw mapExtractorError(`ERROR: ${msg[1].error ?? ''} ${msg[1].message ?? ''}`);
   }

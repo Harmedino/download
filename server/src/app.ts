@@ -7,6 +7,7 @@ import { logger } from './logger.js';
 import { healthRouter } from './routes/health.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { requireDb } from './middleware/requireDb.js';
+import { limits } from './middleware/rateLimit.js';
 import { fetchRouter } from './routes/fetch.js';
 import { downloadRouter } from './routes/download.js';
 import { jobsRouter } from './routes/jobs.js';
@@ -18,7 +19,14 @@ export function createApp() {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
 
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.use(
+    helmet({
+      // JSON + file API: nothing here should ever execute or be framed.
+      contentSecurityPolicy: { useDefaults: false, directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
+      // The Angular app on another origin embeds previews from /api/files.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   app.use(
     cors({
       origin: env.CLIENT_ORIGIN,
@@ -27,14 +35,21 @@ export function createApp() {
     }),
   );
   app.use(express.json({ limit: '100kb' }));
-  app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/api/health' } }));
+  app.use(
+    pinoHttp({
+      logger,
+      autoLogging: { ignore: (req) => req.url === '/api/health' || !!req.url?.startsWith('/api/jobs/') },
+      redact: ['req.headers.cookie', 'req.headers.authorization'],
+    }),
+  );
+  app.use('/api', limits.api());
 
   app.use('/api/health', healthRouter);
-  app.use('/api/fetch', requireDb, fetchRouter);
-  app.use('/api/download', requireDb, downloadRouter);
-  app.use('/api/remove-bg', requireDb, removeBgRouter);
-  app.use('/api/jobs', requireDb, jobsRouter);
-  app.use('/api/files', requireDb, filesRouter);
+  app.use('/api/fetch', requireDb, limits.fetch(), fetchRouter);
+  app.use('/api/download', requireDb, limits.download(), downloadRouter);
+  app.use('/api/remove-bg', requireDb, removeBgRouter); // per-endpoint limits inside, before the upload
+  app.use('/api/jobs', requireDb, limits.jobs(), jobsRouter);
+  app.use('/api/files', requireDb, limits.files(), filesRouter);
 
   app.use(notFound);
   app.use(errorHandler);
