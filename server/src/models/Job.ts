@@ -1,7 +1,7 @@
 import { Schema, model, type InferSchemaType, Types } from 'mongoose';
 import { randomObjectId } from './ids.js';
 
-export const JOB_TYPES = ['fetch', 'download', 'remove-bg-image', 'remove-bg-video'] as const;
+export const JOB_TYPES = ['fetch', 'download', 'remove-bg-image'] as const;
 export const JOB_STATUSES = ['queued', 'processing', 'done', 'failed'] as const;
 export type JobType = (typeof JOB_TYPES)[number];
 export type JobStatus = (typeof JOB_STATUSES)[number];

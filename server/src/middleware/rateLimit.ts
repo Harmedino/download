@@ -125,7 +125,7 @@ const MIN = 60_000;
 
 /** Per-route limits. Tuned for people, not scripts: generous for polling, tight for CPU-heavy work. */
 export const limits = {
-  /** Catch-all for /api. Job polling and file streaming have their own limits (a long video job polls ~1/s). */
+  /** Catch-all for /api. Job polling and file streaming have their own limits (a long job polls ~1/s). */
   api: () =>
     limiter({
       name: 'api',
@@ -137,7 +137,6 @@ export const limits = {
   fetch: () => limiter({ name: 'fetch', windowMs: MIN, limit: 20, message: "You're fetching links very quickly. Please wait a minute and try again." }),
   download: () => limiter({ name: 'download', windowMs: 10 * MIN, limit: 40, message: "You've started a lot of downloads. Please wait a few minutes." }),
   removeBgImage: () => limiter({ name: 'rbg-image', windowMs: 10 * MIN, limit: 20, message: "You've removed a lot of backgrounds. Please wait a few minutes." }),
-  removeBgVideo: () => limiter({ name: 'rbg-video', windowMs: 60 * MIN, limit: 4, message: 'Video background removal is limited to 4 clips per hour. Please try again later.' }),
   /** Job polling runs about once a second per open job. */
   jobs: () => limiter({ name: 'jobs', windowMs: MIN, limit: 300, message: 'Too many status checks. Please slow down.' }),
   /** Video previews make several Range requests per file. */

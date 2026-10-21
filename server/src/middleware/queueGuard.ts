@@ -5,7 +5,6 @@ import { Job, type JobType } from '../models/Job.js';
 export const QUEUE_LIMITS: Record<Exclude<JobType, 'fetch'>, number> = {
   download: 30,
   'remove-bg-image': 20,
-  'remove-bg-video': 4,
 };
 
 export async function assertQueueCapacity(type: Exclude<JobType, 'fetch'>): Promise<void> {

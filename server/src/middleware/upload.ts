@@ -7,9 +7,8 @@ import { uploadsDir } from '../services/storage.js';
 import { AppError } from './errors.js';
 
 const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif|heic|heif|tiff|bmp)$/;
-const VIDEO_TYPES = /^video\/(mp4|webm|quicktime|x-matroska|x-m4v|3gpp|ogg)$/;
 
-function makeUpload(kind: 'image' | 'video') {
+function makeUpload() {
   return multer({
     storage: multer.diskStorage({
       destination: (_req, _file, cb) => cb(null, uploadsDir()),
@@ -21,17 +20,15 @@ function makeUpload(kind: 'image' | 'video') {
     }),
     limits: { fileSize: env.MAX_UPLOAD_BYTES, files: 2, fields: 10, fieldSize: 1024 },
     fileFilter: (_req, file, cb) => {
-      // A custom background image is always an image, even on the video endpoint.
-      const allowed = file.fieldname === 'bgImage' || kind === 'image' ? IMAGE_TYPES : VIDEO_TYPES;
-      if (allowed.test(file.mimetype)) cb(null, true);
-      else cb(new AppError(415, 'UNSUPPORTED_FILE', kind === 'image' ? 'Please upload a JPG, PNG or WebP image.' : 'Please upload an MP4, WebM or MOV video.'));
+      if (IMAGE_TYPES.test(file.mimetype)) cb(null, true);
+      else cb(new AppError(415, 'UNSUPPORTED_FILE', 'Please upload a JPG, PNG or WebP image.'));
     },
   });
 }
 
 /** Accepts multipart uploads (field "file", optional "bgImage"); JSON bodies pass straight through. */
-export function uploadFor(kind: 'image' | 'video'): RequestHandler {
-  const mw = makeUpload(kind).fields([
+export function uploadImage(): RequestHandler {
+  const mw = makeUpload().fields([
     { name: 'file', maxCount: 1 },
     { name: 'bgImage', maxCount: 1 },
   ]);

@@ -31,8 +31,8 @@ import { RouterLink } from '@angular/router';
 
       <h2 class="mt-6 text-lg font-semibold text-zinc-900 dark:text-white">4. Fair use of the service</h2>
       <p class="mt-2">
-        Requests are rate-limited to keep the service available for everyone. Uploads are limited to 50 MB and video background removal
-        to clips of 60 seconds. Automated scraping or abuse of the service is not allowed.
+        Requests are rate-limited to keep the service available for everyone. Uploads are limited to 50 MB, and background
+        removal works on images only. Automated scraping or abuse of the service is not allowed.
       </p>
 
       <h2 class="mt-6 text-lg font-semibold text-zinc-900 dark:text-white">5. No affiliation, no warranty</h2>

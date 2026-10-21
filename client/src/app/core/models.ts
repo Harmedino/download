@@ -55,7 +55,7 @@ export type JobStatus = 'queued' | 'processing' | 'done' | 'failed';
 
 export interface JobView {
   id: string;
-  type: 'fetch' | 'download' | 'remove-bg-image' | 'remove-bg-video';
+  type: 'fetch' | 'download' | 'remove-bg-image';
   status: JobStatus;
   progress: number;
   stage: string | null;
