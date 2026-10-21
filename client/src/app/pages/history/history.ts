@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { exhaustMap, timer } from 'rxjs';
 import { ApiService } from '../../core/api.service';
 import { ConfigService } from '../../core/config.service';
+import { DialogService } from '../../core/dialog.service';
 import { ApiError } from '../../core/errors';
 import { formatBytes, timeAgo } from '../../core/format';
 import type { JobView } from '../../core/models';
@@ -112,6 +113,7 @@ const TYPE_LABELS: Record<JobView['type'], string> = {
 export class History {
   protected readonly api = inject(ApiService);
   protected readonly config = inject(ConfigService);
+  private readonly dialog = inject(DialogService);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly jobs = signal<JobView[]>([]);
   protected readonly loading = signal(true);
@@ -215,8 +217,14 @@ export class History {
     });
   }
 
-  protected clearAll(): void {
-    if (!confirm('Delete all finished jobs and their files from the server?')) return;
+  protected async clearAll(): Promise<void> {
+    const ok = await this.dialog.confirm({
+      title: 'Delete all history?',
+      message: 'This removes every finished job and its files from the server. It cannot be undone.',
+      confirmText: 'Delete all',
+      danger: true,
+    });
+    if (!ok) return;
     this.clearing.set(true);
     this.api.clearHistory().subscribe({
       next: () => {
