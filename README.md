@@ -52,7 +52,7 @@ Background removal loads a ~150 MB model and is CPU-heavy, so use an instance wi
 
 ### Client on Vercel
 1. **Root Directory:** `client` (framework, build command and output directory come from `client/vercel.json`).
-2. **Environment variable:** `API_BASE_URL` = your API URL, e.g. `https://snapgrab-api.onrender.com`.
+2. **Environment variable:** `API_BASE_URL` = your API URL, e.g. `https://download-vmbd.onrender.com` (no trailing slash). The build falls back to the URL in `client/src/environments/environment.ts` when this is unset, so keep that file pointing at the live API too.
 3. Deploy, then make sure that URL is in the API's `CLIENT_ORIGIN`.
 
 ## Security and limits
