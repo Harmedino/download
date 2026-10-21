@@ -11,6 +11,7 @@ import { fetchRouter } from './routes/fetch.js';
 import { downloadRouter } from './routes/download.js';
 import { jobsRouter } from './routes/jobs.js';
 import { filesRouter } from './routes/files.js';
+import { removeBgRouter } from './routes/removeBg.js';
 
 export function createApp() {
   const app = express();
@@ -31,6 +32,7 @@ export function createApp() {
   app.use('/api/health', healthRouter);
   app.use('/api/fetch', requireDb, fetchRouter);
   app.use('/api/download', requireDb, downloadRouter);
+  app.use('/api/remove-bg', requireDb, removeBgRouter);
   app.use('/api/jobs', requireDb, jobsRouter);
   app.use('/api/files', requireDb, filesRouter);
 

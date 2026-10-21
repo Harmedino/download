@@ -133,6 +133,22 @@
               </p>
             }
             <app-error-banner [error]="main.error()" [retryable]="true" (retry)="downloadMain()" />
+            @if (m.kind === 'image') {
+              <button
+                type="button"
+                (click)="removeBackground(0)"
+                [disabled]="toRemoveBg.busy()"
+                class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 font-semibold hover:border-violet-500 disabled:opacity-60 dark:border-zinc-700"
+              >
+                @if (toRemoveBg.busy()) {
+                  <app-spinner />
+                  <span>Preparing image…</span>
+                } @else {
+                  <span>Remove background</span>
+                }
+              </button>
+              <app-error-banner [error]="toRemoveBg.error()" />
+            }
           </div>
         } @else {
           <div class="mt-6 space-y-3">
@@ -199,6 +215,23 @@
                     <span>Download</span>
                   }
                 </button>
+                @if (item.type === 'image') {
+                  <button
+                    type="button"
+                    (click)="removeBackground(item.index)"
+                    [disabled]="toRemoveBg.busy()"
+                    class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 text-sm font-medium hover:border-violet-500 disabled:opacity-60 dark:border-zinc-700"
+                  >
+                    @if (toRemoveBg.busy() && removeBgIndex() === item.index) {
+                      <app-spinner sizeClass="h-4 w-4" />
+                    } @else {
+                      <span>Remove BG</span>
+                    }
+                  </button>
+                  @if (removeBgIndex() === item.index) {
+                    <app-error-banner [error]="toRemoveBg.error()" />
+                  }
+                }
                 <app-error-banner [error]="t.error()" />
               </div>
             </li>

@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEventType } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, retry, switchMap, takeWhile, throwError, timer } from 'rxjs';
+import { Observable, catchError, filter, map, of, retry, switchMap, takeWhile, tap, throwError, timer } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ApiError, toApiError } from './errors';
 import type { DownloadRequest, FetchResponse, JobView } from './models';
@@ -28,10 +28,14 @@ export class ApiService {
     );
   }
 
-  /** Posts a multipart form to a job-creating endpoint and returns the job id. */
-  startUploadJob(path: string, form: FormData): Observable<string> {
-    return this.http.post<{ jobId: string }>(`${this.base}${path}`, form).pipe(
-      map((r) => r.jobId),
+  /** Posts a multipart form to a job-creating endpoint and returns the job id, reporting upload progress (0-100). */
+  startUploadJob(path: string, form: FormData, onProgress?: (pct: number) => void): Observable<string> {
+    return this.http.post<{ jobId: string }>(`${this.base}${path}`, form, { reportProgress: true, observe: 'events' }).pipe(
+      tap((e) => {
+        if (e.type === HttpEventType.UploadProgress && e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+      }),
+      filter((e) => e.type === HttpEventType.Response),
+      map((e) => (e.type === HttpEventType.Response ? e.body!.jobId : '')),
       catchError((e) => throwError(() => toApiError(e))),
     );
   }
