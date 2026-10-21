@@ -48,6 +48,8 @@ export class Result {
   protected readonly platformName = computed(() => (this.data() ? PLATFORM_NAMES[this.data()!.platform] : ''));
   protected readonly isCarousel = computed(() => (this.meta()?.items.length ?? 0) > 1);
   protected readonly isVideo = computed(() => this.meta()?.kind === 'video');
+  /** Video background removal is limited to short clips. */
+  protected readonly canRemoveVideoBg = computed(() => this.isVideo() && (this.meta()?.duration ?? Infinity) <= 60.5);
   protected readonly selectedFormat = computed(() => this.meta()?.formats.find((f) => f.id === this.quality()) ?? null);
   protected readonly displaySize = computed(() => {
     if (this.audioOnly()) return '';
@@ -153,10 +155,17 @@ export class Result {
     if (!d) return;
     this.removeBgIndex.set(index);
     this.toRemoveBg.run(
-      this.api.startDownload({ url: d.sourceUrl, itemIndex: this.isCarousel() ? index : undefined }),
+      // Videos are fetched at 720p (or the best below it): plenty for background removal and much faster to process.
+      this.api.startDownload({
+        url: d.sourceUrl,
+        itemIndex: this.isCarousel() ? index : undefined,
+        formatId: !this.isCarousel() && d.metadata.formats.some((f) => f.id === '720p') ? '720p' : undefined,
+      }),
       (job) => {
         const f = job.files[0];
-        if (f) void this.router.navigate(['/remove-bg'], { queryParams: { fileId: f.id, name: f.name } });
+        if (!f) return;
+        const page = f.mimeType.startsWith('video/') ? '/remove-bg/video' : '/remove-bg';
+        void this.router.navigate([page], { queryParams: { fileId: f.id, name: f.name } });
       },
     );
   }

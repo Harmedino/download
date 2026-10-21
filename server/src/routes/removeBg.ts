@@ -3,6 +3,8 @@ import { Router, type Request } from 'express';
 import { z } from 'zod';
 import { enqueue } from '../jobs/agenda.js';
 import type { RemoveBgParams } from '../jobs/processors/removeBgImage.js';
+import type { RemoveBgVideoParams } from '../jobs/processors/removeBgVideo.js';
+import { assertDurationAllowed, probeVideo } from '../services/videoBg.js';
 import { AppError } from '../middleware/errors.js';
 import { uploadErrors, uploadFor } from '../middleware/upload.js';
 import { assertObjectId, parseBody } from '../middleware/validate.js';
@@ -78,6 +80,26 @@ removeBgRouter.post('/image', uploadFor('image'), async (req, res) => {
   };
   const job = await Job.create({ type: 'remove-bg-image', params });
   await enqueue('remove-bg-image', job._id);
+  res.status(202).json({ jobId: job._id });
+});
+
+removeBgRouter.post('/video', uploadFor('video'), async (req, res) => {
+  const { inputPath, inputName, body, bgImagePath } = await resolveInput(req, 'video');
+  const uploaded = !!(req.files as UploadedFiles | undefined)?.['file']?.[0];
+  try {
+    if (body.background !== 'transparent' && body.background !== 'color') {
+      throw new AppError(400, 'INVALID_REQUEST', 'Video backgrounds can be transparent or a solid color.');
+    }
+    // Probe now so an over-long clip is rejected immediately instead of after queueing.
+    assertDurationAllowed(await probeVideo(inputPath));
+  } catch (err) {
+    if (uploaded) await fsp.rm(inputPath, { force: true });
+    if (bgImagePath) await fsp.rm(bgImagePath, { force: true });
+    throw err;
+  }
+  const params: RemoveBgVideoParams = { inputPath, inputName, background: body.background, color: body.color };
+  const job = await Job.create({ type: 'remove-bg-video', params });
+  await enqueue('remove-bg-video', job._id);
   res.status(202).json({ jobId: job._id });
 });
 

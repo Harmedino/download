@@ -133,7 +133,7 @@
               </p>
             }
             <app-error-banner [error]="main.error()" [retryable]="true" (retry)="downloadMain()" />
-            @if (m.kind === 'image') {
+            @if (m.kind === 'image' || canRemoveVideoBg()) {
               <button
                 type="button"
                 (click)="removeBackground(0)"
@@ -142,7 +142,7 @@
               >
                 @if (toRemoveBg.busy()) {
                   <app-spinner />
-                  <span>Preparing image…</span>
+                  <span>Preparing {{ isVideo() ? "video" : "image" }}…</span>
                 } @else {
                   <span>Remove background</span>
                 }

@@ -75,6 +75,14 @@ describe('background compositing', () => {
 });
 
 describe('model inference (runs the real local model)', () => {
+  it('keeps the subject and removes the background of a person drawing', async () => {
+    const cut = await cutout(await decodeImage(path.join(import.meta.dirname, 'fixtures', 'person.svg')));
+    const alphaAt = (x: number, y: number) => cut.data[(y * cut.width + x) * 4 + 3]!;
+    expect(alphaAt(10, 10)).toBeLessThan(20); // sky
+    expect(alphaAt(256, 170)).toBeGreaterThan(235); // face
+    expect(alphaAt(256, 450)).toBeGreaterThan(235); // body
+  }, 60_000);
+
   it('produces an RGBA cutout with the input size', async () => {
     const input = path.join(dir, 'photo.png');
     await fs.mkdir(dir, { recursive: true });
