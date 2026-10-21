@@ -1,0 +1,329 @@
+<section class="mx-auto max-w-6xl px-4 pt-8 sm:pt-12">
+  <app-tool-header
+    title="Subtitle generator"
+    subtitle="Turn speech into subtitles with real speech recognition, fix the wording and timing, style them, then download SRT or VTT or burn them into the video."
+  />
+
+  @if (!source()) {
+    <div class="mx-auto mt-8 max-w-2xl">
+      <app-media-source [(file)]="source" [fileId]="fileId()" />
+    </div>
+  } @else {
+    @let s = source()!;
+    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div class="min-w-0 space-y-4">
+        <app-range-player #rangePlayer [file]="s" [(time)]="time" [showRange]="false">
+          @if (active(); as c) {
+            <div
+              class="pointer-events-none absolute inset-0 flex justify-center px-[5%]"
+              style="container-type: size"
+              [class.items-end]="style().position === 'bottom'"
+              [class.items-center]="style().position === 'middle'"
+              [class.items-start]="style().position === 'top'"
+            >
+              <span
+                class="max-w-full rounded px-[0.3em] text-center leading-tight whitespace-pre-line"
+                [style]="overlayStyle()"
+                [style.margin-bottom.cqh]="style().position === 'bottom' ? style().margin * 100 : 0"
+                [style.margin-top.cqh]="style().position === 'top' ? style().margin * 100 : 0"
+                >{{ c.text }}</span
+              >
+            </div>
+          }
+        </app-range-player>
+
+        @if (cues().length) {
+          <div [class]="ui.card">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm font-medium">
+                {{ cues().length }} subtitle{{ cues().length === 1 ? '' : 's'
+                }}{{ detected() ? ' · ' + detected() : '' }}
+              </p>
+              <button type="button" class="text-sm underline" (click)="addCue()">
+                Add at {{ fmt(time()) }}
+              </button>
+            </div>
+            <ol class="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+              @for (c of cues(); track $index; let i = $index) {
+                <li
+                  class="rounded-2xl border p-3 transition"
+                  [class]="
+                    active() === c
+                      ? 'border-violet-500 bg-violet-500/5'
+                      : 'border-zinc-200 dark:border-zinc-800'
+                  "
+                >
+                  <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <button
+                      type="button"
+                      class="rounded-lg px-2 py-1 font-medium text-violet-700 tabular-nums hover:bg-violet-500/10 dark:text-violet-300"
+                      (click)="seek(c.start)"
+                      [attr.aria-label]="'Play from ' + fmt(c.start)"
+                    >
+                      ▶ {{ i + 1 }}
+                    </button>
+                    <input
+                      class="h-8 w-24 rounded-lg border border-zinc-200 bg-transparent px-2 tabular-nums dark:border-zinc-700"
+                      [value]="fmt(c.start)"
+                      (change)="setTime(i, 'start', $any($event.target).value)"
+                      aria-label="Start time"
+                    />
+                    <button
+                      type="button"
+                      class="text-xs underline"
+                      (click)="setToPlayhead(i, 'start')"
+                      title="Set start to the playhead"
+                    >
+                      ⇤ here
+                    </button>
+                    <span aria-hidden="true">–</span>
+                    <input
+                      class="h-8 w-24 rounded-lg border border-zinc-200 bg-transparent px-2 tabular-nums dark:border-zinc-700"
+                      [value]="fmt(c.end)"
+                      (change)="setTime(i, 'end', $any($event.target).value)"
+                      aria-label="End time"
+                    />
+                    <button
+                      type="button"
+                      class="text-xs underline"
+                      (click)="setToPlayhead(i, 'end')"
+                      title="Set end to the playhead"
+                    >
+                      here ⇥
+                    </button>
+                    <button
+                      type="button"
+                      class="ml-auto text-xs text-zinc-500 hover:text-red-600"
+                      (click)="remove(i)"
+                      [attr.aria-label]="'Delete subtitle ' + (i + 1)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                  <textarea
+                    rows="2"
+                    maxlength="500"
+                    class="mt-2 w-full resize-y rounded-xl border border-zinc-200 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+                    [value]="c.text"
+                    (input)="patch(i, { text: $any($event.target).value })"
+                    [attr.aria-label]="'Text of subtitle ' + (i + 1)"
+                  ></textarea>
+                </li>
+              }
+            </ol>
+          </div>
+        }
+      </div>
+
+      <div class="space-y-4">
+        <div [class]="ui.card">
+          <div class="flex items-center justify-between gap-2">
+            <p class="truncate text-sm font-medium" [title]="s.name">{{ s.name }}</p>
+            <button
+              type="button"
+              class="shrink-0 text-sm underline"
+              [disabled]="generate.busy() || burn.busy()"
+              (click)="source.set(null)"
+            >
+              Change
+            </button>
+          </div>
+          @if (config.transcription() === false) {
+            <p
+              class="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200"
+              role="status"
+            >
+              Speech recognition isn't set up on this server yet, so subtitles can't be generated
+              here. You can still import an SRT or VTT file to edit, style and burn in.
+            </p>
+          } @else {
+            <label class="block">
+              <span [class]="ui.label">Spoken language</span>
+              <select
+                [class]="ui.select"
+                [value]="language()"
+                (change)="language.set($any($event.target).value)"
+              >
+                @for (l of languages; track l.code) {
+                  <option [value]="l.code" [selected]="l.code === language()">{{ l.label }}</option>
+                }
+              </select>
+            </label>
+            <button
+              type="button"
+              [class]="ui.primary"
+              [disabled]="generate.busy() || !s.info?.hasAudio"
+              (click)="start()"
+            >
+              @if (generate.busy()) {
+                <app-spinner />
+              }
+              {{ cues().length ? 'Generate again' : 'Generate subtitles' }}
+            </button>
+            @if (!s.info?.hasAudio) {
+              <p class="text-xs text-amber-700 dark:text-amber-300">
+                This video has no audio track.
+              </p>
+            }
+            <app-job-panel
+              [tracker]="generate"
+              doneText="Subtitles generated. Edit them on the left."
+              [showPreview]="false"
+              (retry)="start()"
+            />
+          }
+          <label class="block text-sm">
+            <span class="underline">Or import an .srt or .vtt file</span>
+            <input
+              type="file"
+              accept=".srt,.vtt,text/vtt,application/x-subrip"
+              class="sr-only"
+              (change)="importFile($event)"
+            />
+          </label>
+          @if (importError()) {
+            <p class="text-sm text-red-600" role="alert">{{ importError() }}</p>
+          }
+        </div>
+
+        @if (cues().length) {
+          <div [class]="ui.card">
+            <p class="text-sm font-medium">Style</p>
+            <div class="flex items-center gap-2">
+              <select
+                class="h-10 flex-1 rounded-xl border border-zinc-200 bg-transparent px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                [value]="style().font"
+                (change)="setStyle({ font: $any($event.target).value })"
+                aria-label="Font"
+              >
+                @for (f of fonts; track f.id) {
+                  <option [value]="f.id" [selected]="f.id === style().font">{{ f.label }}</option>
+                }
+              </select>
+              <input
+                type="color"
+                class="h-10 w-11 rounded"
+                [value]="style().color"
+                (input)="setStyle({ color: $any($event.target).value })"
+                aria-label="Text colour"
+              />
+              <input
+                type="color"
+                class="h-10 w-11 rounded"
+                [value]="style().outline"
+                (input)="setStyle({ outline: $any($event.target).value })"
+                aria-label="Outline colour"
+                [disabled]="style().box"
+              />
+            </div>
+            <label class="block">
+              <span class="mb-1 flex justify-between text-sm"
+                >Size
+                <span class="text-zinc-500 tabular-nums"
+                  >{{ (style().size * 100).toFixed(1) }}%</span
+                ></span
+              >
+              <input
+                type="range"
+                class="w-full accent-violet-600"
+                min="0.02"
+                max="0.12"
+                step="0.005"
+                [value]="style().size"
+                (input)="setStyle({ size: +$any($event.target).value })"
+              />
+            </label>
+            <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Position">
+              @for (p of positions; track p.id) {
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="style().position === p.id"
+                  (click)="setStyle({ position: p.id })"
+                  [class]="ui.chip + ' ' + (style().position === p.id ? ui.chipOn : ui.chipOff)"
+                >
+                  {{ p.label }}
+                </button>
+              }
+            </div>
+            @if (style().position !== 'middle') {
+              <label class="block">
+                <span class="mb-1 flex justify-between text-sm"
+                  >Distance from edge
+                  <span class="text-zinc-500 tabular-nums"
+                    >{{ (style().margin * 100).toFixed(0) }}%</span
+                  ></span
+                >
+                <input
+                  type="range"
+                  class="w-full accent-violet-600"
+                  min="0"
+                  max="0.4"
+                  step="0.01"
+                  [value]="style().margin"
+                  (input)="setStyle({ margin: +$any($event.target).value })"
+                />
+              </label>
+            }
+            <div class="flex flex-wrap gap-4 text-sm">
+              <label class="flex items-center gap-2"
+                ><input
+                  type="checkbox"
+                  class="accent-violet-600"
+                  [checked]="style().box"
+                  (change)="setStyle({ box: $any($event.target).checked })"
+                />
+                Background box</label
+              >
+              <label class="flex items-center gap-2"
+                ><input
+                  type="checkbox"
+                  class="accent-violet-600"
+                  [checked]="style().bold"
+                  (change)="setStyle({ bold: $any($event.target).checked })"
+                />
+                Bold</label
+              >
+            </div>
+          </div>
+
+          <div [class]="ui.card">
+            <p class="text-sm font-medium">Export</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" [class]="ui.chip + ' ' + ui.chipOff" (click)="exportSrt()">
+                Download SRT
+              </button>
+              <button type="button" [class]="ui.chip + ' ' + ui.chipOff" (click)="exportVtt()">
+                Download VTT
+              </button>
+            </div>
+            <label class="block">
+              <span [class]="ui.label">Burned-in video format</span>
+              <select
+                [class]="ui.select"
+                [value]="format()"
+                (change)="format.set($any($event.target).value)"
+              >
+                <option value="mp4">MP4</option>
+                <option value="webm">WebM</option>
+              </select>
+            </label>
+            <button type="button" [class]="ui.primary" [disabled]="burn.busy()" (click)="burnIn()">
+              @if (burn.busy()) {
+                <app-spinner />
+              }
+              Burn subtitles into video
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="mx-auto mt-6 max-w-2xl">
+      <app-job-panel
+        [tracker]="burn"
+        doneText="Your subtitled video is ready."
+        (retry)="burnIn()"
+      />
+    </div>
+  }
+</section>

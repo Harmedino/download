@@ -95,7 +95,7 @@ const MAX_SECONDS = 30;
                   (change)="width.set(+$any($event.target).value)"
                 >
                   @for (w of [240, 320, 480, 640, 800, 1080]; track w) {
-                    <option [value]="w">{{ w }}px</option>
+                    <option [value]="w" [selected]="w === width()">{{ w }}px</option>
                   }
                 </select>
               </label>
@@ -107,7 +107,7 @@ const MAX_SECONDS = 30;
                   (change)="fps.set(+$any($event.target).value)"
                 >
                   @for (f of [8, 10, 12, 15, 20, 25, 30]; track f) {
-                    <option [value]="f">{{ f }} fps</option>
+                    <option [value]="f" [selected]="f === fps()">{{ f }} fps</option>
                   }
                 </select>
               </label>

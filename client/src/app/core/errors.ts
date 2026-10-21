@@ -63,6 +63,8 @@ const FRIENDLY: Record<string, FriendlyText> = {
   AI_UNAVAILABLE: { title: 'AI is not set up on this server', hint: 'The site owner needs to add an API key.' },
   AI_FAILED: { title: 'The AI service failed', hint: 'Please try again in a moment.' },
   NO_SPEECH: { title: 'No speech found', hint: "We couldn't hear any words in this video." },
+  AI_RATE_LIMITED: { title: 'The AI service is busy', hint: 'Please try again later.' },
+  PACK_EMPTY: { title: 'Nothing could be packed', hint: 'Choose other items and try again.' },
   NOT_A_CAROUSEL: { title: 'Nothing to zip', hint: 'This post has a single item; use the normal download.' },
   INVALID_ITEM: { title: 'That item is no longer in the post', hint: 'Fetch the link again and retry.' },
   BODY_TOO_LARGE: { title: 'Request too large', hint: 'Please try again with a shorter link.' },
@@ -89,6 +91,8 @@ const USE_SERVER_HINT = new Set([
   'AI_UNAVAILABLE',
   'AI_FAILED',
   'NO_SPEECH',
+  'AI_RATE_LIMITED',
+  'PACK_EMPTY',
   'JOB_RUNNING',
   'NOT_RETRYABLE',
 ]);

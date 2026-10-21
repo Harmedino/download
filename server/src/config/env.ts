@@ -38,6 +38,22 @@ const schema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((v) => v === 'true'),
+
+  // --- AI services (optional). Tools that need them are refused with AI_UNAVAILABLE when unset. ---
+  /** Speech-to-text for subtitles and transcripts. "auto" picks the first provider with a key. */
+  TRANSCRIBE_PROVIDER: z.enum(['auto', 'openai', 'groq', 'deepgram', 'none']).default('auto'),
+  /** Writes titles, descriptions and hashtags for the Creator Pack. "auto" picks the first provider with a key. */
+  LLM_PROVIDER: z.enum(['auto', 'anthropic', 'openai', 'groq', 'none']).default('auto'),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5-5'),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_TRANSCRIBE_MODEL: z.string().default('whisper-1'),
+  OPENAI_LLM_MODEL: z.string().default('gpt-4.1-mini'),
+  GROQ_API_KEY: z.string().optional(),
+  GROQ_TRANSCRIBE_MODEL: z.string().default('whisper-large-v3-turbo'),
+  GROQ_LLM_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  DEEPGRAM_API_KEY: z.string().optional(),
+  DEEPGRAM_MODEL: z.string().default('nova-3'),
 });
 
 const parsed = schema.safeParse(process.env);

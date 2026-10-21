@@ -12,6 +12,9 @@ export class ConfigService {
   readonly fileTtlMinutes = computed(() => this._config()?.fileTtlMinutes ?? 60);
   readonly maxMediaUploadMb = computed(() => this._config()?.maxMediaUploadMb ?? 500);
   readonly maxMediaMinutes = computed(() => this._config()?.maxMediaMinutes ?? 60);
+  /** null while loading; false when the server has no speech-to-text / text model configured. */
+  readonly transcription = computed(() => (this._config() ? !!this._config()!.ai?.transcription : null));
+  readonly llm = computed(() => (this._config() ? !!this._config()!.ai?.llm : null));
   private requested = false;
 
   constructor() {
