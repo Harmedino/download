@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createProgressTracker, formatSelector, mapExtractorError, normalizeYtdlpInfo } from '../src/services/ytdlp.js';
+import { COMPAT_SORT, createProgressTracker, formatSelector, mapExtractorError, normalizeYtdlpInfo } from '../src/services/ytdlp.js';
 import { normalizeGalleryDlJson } from '../src/services/gallerydl.js';
 
 // Hand-written fixtures shaped like `yt-dlp -J` / `gallery-dl -j` output.
@@ -64,6 +64,12 @@ describe('normalizeYtdlpInfo', () => {
     expect(m.kind).toBe('carousel');
     expect(m.items.map((i) => i.type)).toEqual(['video', 'image']);
     expect(m.formats).toEqual([]);
+  });
+});
+
+describe('COMPAT_SORT', () => {
+  it('keeps resolution first and then prefers H.264 + AAC', () => {
+    expect(COMPAT_SORT.split(',')).toEqual(['res', 'vcodec:h264', 'acodec:aac']);
   });
 });
 

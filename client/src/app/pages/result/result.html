@@ -21,19 +21,39 @@
     <div class="animate-fade-up mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10">
       <!-- Preview -->
       <div class="relative mx-auto w-full overflow-hidden rounded-3xl bg-zinc-200 dark:bg-zinc-900" [class]="m.portrait ? 'aspect-[9/16] max-h-[70vh] max-w-sm' : 'aspect-video'">
-        @if (m.thumbnail) {
-          <img [src]="m.thumbnail" [alt]="m.title" class="h-full w-full object-cover" referrerpolicy="no-referrer" />
+        @if (playerSrc() && !playerIsAudio()) {
+          <video [src]="playerSrc()" controls autoplay playsinline preload="auto" class="h-full w-full bg-black object-contain" [attr.aria-label]="m.title"></video>
         } @else {
-          <div class="flex h-full w-full items-center justify-center text-zinc-400">No preview available</div>
-        }
-        @if (m.kind === 'video') {
-          <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur">
-              <svg viewBox="0 0 24 24" class="ml-1 h-7 w-7" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+          @if (m.thumbnail) {
+            <img [src]="m.thumbnail" [alt]="m.title" class="h-full w-full object-cover" referrerpolicy="no-referrer" />
+          } @else {
+            <div class="flex h-full w-full items-center justify-center text-zinc-400">No preview available</div>
+          }
+          @if (m.kind === 'video' && !isCarousel()) {
+            <button
+              type="button"
+              (click)="playHere()"
+              [disabled]="listen.busy()"
+              class="absolute inset-0 flex items-center justify-center"
+              [attr.aria-label]="audioOnly() ? 'Listen here' : 'Play here'"
+            >
+              <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur transition hover:bg-black/70">
+                @if (listen.busy()) {
+                  <span class="text-sm font-semibold tabular-nums">{{ listen.progress() }}%</span>
+                } @else {
+                  <svg viewBox="0 0 24 24" class="ml-1 h-7 w-7" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                }
+              </span>
+            </button>
+          } @else if (m.kind === 'video') {
+            <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span class="flex h-16 w-16 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur">
+                <svg viewBox="0 0 24 24" class="ml-1 h-7 w-7" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+              </span>
             </span>
-          </span>
+          }
         }
-        @if (m.duration) {
+        @if (m.duration && !(playerSrc() && !playerIsAudio())) {
           <span class="absolute right-3 bottom-3 rounded-md bg-black/70 px-2 py-0.5 text-xs font-medium text-white tabular-nums">{{ formatDuration(m.duration) }}</span>
         }
         @if (isCarousel()) {
@@ -78,7 +98,7 @@
                     type="button"
                     role="radio"
                     [attr.aria-checked]="!audioOnly() && quality() === f.id"
-                    (click)="quality.set(f.id); audioOnly.set(false)"
+                    (click)="selectQuality(f.id, false)"
                     class="rounded-xl border px-4 py-2 text-sm font-medium transition"
                     [class]="!audioOnly() && quality() === f.id
                       ? 'border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-200'
@@ -95,7 +115,7 @@
                     type="button"
                     role="radio"
                     [attr.aria-checked]="audioOnly()"
-                    (click)="audioOnly.set(true)"
+                    (click)="selectQuality(null, true)"
                     class="rounded-xl border px-4 py-2 text-sm font-medium transition"
                     [class]="audioOnly()
                       ? 'border-violet-500 bg-violet-500/10 text-violet-700 dark:text-violet-200'
@@ -157,29 +177,27 @@
                 <app-error-banner [error]="toTool.error()" />
               </div>
             }
-            @if (audioOnly()) {
-              @if (playerSrc(); as src) {
-                <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-900">
-                  <p class="mb-2 truncate text-sm font-medium">Now playing: {{ m.title }}</p>
-                  <audio [src]="src" controls autoplay preload="auto" class="w-full" aria-label="Audio player"></audio>
-                </div>
-              } @else {
-                <button
-                  type="button"
-                  (click)="listenHere()"
-                  [disabled]="listen.busy() || main.busy()"
-                  class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 font-semibold hover:border-violet-500 disabled:opacity-60 dark:border-zinc-700"
-                >
-                  @if (listen.busy()) {
-                    <app-spinner />
-                    <span>Getting audio… {{ listen.progress() }}%</span>
-                  } @else {
-                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
-                    <span>Play here</span>
-                  }
-                </button>
-                <app-error-banner [error]="listen.error()" [retryable]="true" (retry)="listenHere()" />
-              }
+            @if (playerSrc() && playerIsAudio()) {
+              <div class="rounded-2xl bg-zinc-100 p-3 dark:bg-zinc-900">
+                <p class="mb-2 truncate text-sm font-medium">Now playing: {{ m.title }}</p>
+                <audio [src]="playerSrc()" controls autoplay preload="auto" class="w-full" aria-label="Audio player"></audio>
+              </div>
+            } @else if (isVideo() && !playerSrc()) {
+              <button
+                type="button"
+                (click)="playHere()"
+                [disabled]="listen.busy() || main.busy()"
+                class="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 font-semibold hover:border-violet-500 disabled:opacity-60 dark:border-zinc-700"
+              >
+                @if (listen.busy()) {
+                  <app-spinner />
+                  <span>Getting {{ audioOnly() ? 'audio' : 'video' }}… {{ listen.progress() }}%</span>
+                } @else {
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                  <span>{{ audioOnly() ? 'Listen here' : 'Play here' }}</span>
+                }
+              </button>
+              <app-error-banner [error]="listen.error()" [retryable]="true" (retry)="playHere()" />
             }
             @if (m.kind === 'image') {
               <button

@@ -46,10 +46,12 @@ export class Result {
   /** Downloads an image to the server, then opens it in the background remover (images only). */
   protected readonly toRemoveBg = new JobTracker(this.api);
   protected readonly removeBgIndex = signal<number | null>(null);
-  /** Fetches the MP3 to play in the page instead of saving it. */
+  /** Fetches the selected video or MP3 to play in the page instead of saving it. */
   protected readonly listen = new JobTracker(this.api);
-  /** Inline URL of the fetched MP3, shown in the audio player. */
+  /** Inline URL of the fetched file, shown in the page's video or audio player. */
   protected readonly playerSrc = signal<string | null>(null);
+  /** Whether playerSrc is audio (MP3) rather than video. */
+  protected readonly playerIsAudio = signal(false);
   private readonly itemTrackers = new Map<number, JobTracker>();
 
   protected readonly meta = computed(() => this.data()?.metadata ?? null);
@@ -150,33 +152,38 @@ export class Result {
     return t;
   }
 
+  private mainRequest(url: string) {
+    const audio = this.audioOnly();
+    return { url, formatId: audio ? undefined : (this.quality() ?? undefined), audioOnly: audio || undefined };
+  }
+
   protected downloadMain(): void {
     const d = this.data();
     if (!d) return;
-    const audio = this.audioOnly() && this.isVideo();
-    this.main.run(
-      this.api.startDownload({
-        url: d.sourceUrl,
-        formatId: audio ? undefined : (this.quality() ?? undefined),
-        audioOnly: audio || undefined,
-      }),
-      (job) => {
-        this.finish(job, d.metadata.thumbnail);
-        if (audio) this.play(job);
-      },
-    );
+    this.main.run(this.api.startDownload(this.mainRequest(d.sourceUrl)), (job) => {
+      this.finish(job, d.metadata.thumbnail);
+      if (this.isVideo()) this.play(job);
+    });
   }
 
-  /** Fetches the MP3 and plays it in the page, without saving it. */
-  protected listenHere(): void {
+  /** Fetches the selected video quality or MP3 and plays it in the page, without saving it. */
+  protected playHere(): void {
     const d = this.data();
-    if (!d) return;
-    this.listen.run(this.api.startDownload({ url: d.sourceUrl, audioOnly: true }), (job) => this.play(job));
+    if (!d || !this.isVideo() || this.listen.busy()) return;
+    this.listen.run(this.api.startDownload(this.mainRequest(d.sourceUrl)), (job) => this.play(job));
   }
 
   private play(job: JobView): void {
     const f = job.files[0];
-    if (f?.mimeType.startsWith('audio/')) this.playerSrc.set(this.api.fileUrl(f.url, true));
+    if (!f || !/^(audio|video)\//.test(f.mimeType)) return;
+    this.playerIsAudio.set(f.mimeType.startsWith('audio/'));
+    this.playerSrc.set(this.api.fileUrl(f.url, true));
+  }
+
+  protected selectQuality(id: QualityPreset | null, audio: boolean): void {
+    if (id) this.quality.set(id);
+    this.audioOnly.set(audio);
+    this.playerSrc.set(null);
   }
 
   protected downloadItem(item: MediaItem): void {
