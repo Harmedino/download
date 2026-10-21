@@ -6,6 +6,11 @@ import { env } from './config/env.js';
 import { logger } from './logger.js';
 import { healthRouter } from './routes/health.js';
 import { errorHandler, notFound } from './middleware/errors.js';
+import { requireDb } from './middleware/requireDb.js';
+import { fetchRouter } from './routes/fetch.js';
+import { downloadRouter } from './routes/download.js';
+import { jobsRouter } from './routes/jobs.js';
+import { filesRouter } from './routes/files.js';
 
 export function createApp() {
   const app = express();
@@ -24,6 +29,10 @@ export function createApp() {
   app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/api/health' } }));
 
   app.use('/api/health', healthRouter);
+  app.use('/api/fetch', requireDb, fetchRouter);
+  app.use('/api/download', requireDb, downloadRouter);
+  app.use('/api/jobs', requireDb, jobsRouter);
+  app.use('/api/files', requireDb, filesRouter);
 
   app.use(notFound);
   app.use(errorHandler);

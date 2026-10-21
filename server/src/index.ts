@@ -1,12 +1,13 @@
-import fs from 'node:fs/promises';
 import { env } from './config/env.js';
 import { logger } from './logger.js';
 import { connectMongo, disconnectMongo } from './db/mongoose.js';
 import { checkBinaries } from './services/binaries.js';
 import { createApp } from './app.js';
+import { startAgenda, stopAgenda } from './jobs/agenda.js';
+import { ensureStorageDirs } from './services/storage.js';
 
 async function main() {
-  await fs.mkdir(env.TEMP_DIR, { recursive: true });
+  await ensureStorageDirs();
 
   for (const b of await checkBinaries()) {
     if (b.available) logger.info({ version: b.version }, `${b.name} found`);
@@ -14,6 +15,7 @@ async function main() {
   }
 
   await connectMongo(env.MONGO_URI);
+  await startAgenda();
 
   const server = createApp().listen(env.PORT, () => {
     logger.info(`SnapGrab API listening on http://localhost:${env.PORT}`);
@@ -22,6 +24,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received, shutting down`);
     server.close();
+    await stopAgenda().catch(() => undefined);
     await disconnectMongo().catch(() => undefined);
     process.exit(0);
   };
