@@ -1,32 +1,145 @@
 # SnapGrab
 
-Paste a link from a public YouTube, TikTok, Instagram, Facebook, X/Twitter, Pinterest, Reddit, Vimeo, Dailymotion, Twitch, SoundCloud, LinkedIn, Tumblr, Snapchat, Bluesky, Streamable or Imgur post, preview it, and download the video, audio or image. You can also remove the background from an image (uploaded, or straight from a fetched post). Background removal works on images only.
+Paste a link from a public YouTube, TikTok, Instagram, Facebook, X/Twitter, Pinterest, Reddit, Vimeo, Dailymotion, Twitch, SoundCloud, LinkedIn, Tumblr, Snapchat, Bluesky, Streamable or Imgur post (or a direct link to a media file), preview it, and download the video, audio or image. Then remove an image's background or edit the video with the built-in tools.
 
-> Work in progress. Full setup and deployment docs land in phase 8.
+Only download content you own or have permission to use. SnapGrab works with public posts only and never asks for social media logins.
 
-## Layout
+## Features
 
-| Path | What |
-|------|------|
-| `server/` | Node + Express + TypeScript API, MongoDB (Mongoose), Agenda job queue, yt-dlp / gallery-dl / ffmpeg |
-| `client/` | Angular 22 (standalone components, signals, zoneless) + Tailwind CSS 4 |
+- **Downloader:** platform detection as you type, preview with title, duration and size, 360p / 720p / 1080p / best, MP3 audio only, carousel grid with per-item download and **Download all (ZIP)**.
+- **Background remover:** runs locally on the server (no paid API); before/after slider; transparent, solid color, blurred or custom image backgrounds; PNG export.
+- **Video tools:** editor, converter, compressor, Shorts maker, frame extractor, thumbnail editor, GIF maker, subtitles and Creator Pack (see [Video tools](#video-tools)).
+- **History:** recent jobs per browser, with no accounts.
+- Dark mode by default with a light mode toggle, mobile-first layout, friendly error messages, Terms page.
 
-## Quick start (local)
+## Tech stack
 
-Requirements: Node 22.22.3+ or 24.15+, MongoDB, `yt-dlp` (install with `pip install -U "yt-dlp[default]"` so YouTube works), `gallery-dl`, `ffmpeg`.
+| Part | Built with |
+|------|------------|
+| Web app (`client/`) | Angular 22 (standalone components, signals, zoneless), Angular Router, Tailwind CSS 4 |
+| API (`server/`) | Node 24, Express 5, TypeScript, Mongoose, Agenda (MongoDB-backed job queue, no Redis), express-rate-limit with a MongoDB store, Helmet |
+| Media | yt-dlp, gallery-dl, ffmpeg via fluent-ffmpeg, `@imgly/background-removal-node` (local ONNX model), sharp |
+| Database | MongoDB (`jobs`, `mediaCache` and `files` with 1-hour TTL indexes, `rateLimits`, `agendaJobs`) |
+
+## Project structure
+
+```
+.
+├── client/                 Angular app
+│   ├── src/app/core/       API client, job polling, history, theme, error copy
+│   ├── src/app/pages/      home, result, remove-bg, tools, history, terms, ...
+│   ├── src/app/shared/     header, footer, platform icon, progress bar, compare slider, ...
+│   ├── scripts/set-env.mjs writes the API URL (and ad settings) at build time
+│   ├── Dockerfile          build + nginx image
+│   └── vercel.json         Vercel settings (Root Directory = client)
+├── server/                 Express API
+│   ├── src/routes/         fetch, download, remove-bg, media, tools, jobs, files, history, config, health
+│   ├── src/jobs/           Agenda setup and job processors (downloads, tools, cleanup)
+│   ├── src/services/       yt-dlp, gallery-dl, ffmpeg, background removal, storage, AI providers
+│   ├── src/middleware/     rate limits, uploads, validation, errors
+│   ├── src/models/         Job, File, MediaCache
+│   ├── tests/              Vitest + Supertest
+│   ├── Dockerfile          Node + ffmpeg + yt-dlp + gallery-dl image
+│   └── .env.example        every setting, with defaults
+├── docker-compose.yml      MongoDB + API + web app
+└── render.yaml             Render Blueprint for the API
+```
+
+## Quick start with Docker
+
+Needs [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine with the Compose plugin).
 
 ```bash
-# API
-cd server
-cp .env.example .env        # set MONGO_URI etc.
-npm install
-npm run dev                 # http://localhost:4000/api/health
+git clone https://github.com/Harmedino/download.git snapgrab
+cd snapgrab
+docker compose up --build
+```
 
-# Web app
+Then open **http://localhost:8080**. The API is on http://localhost:4000 and http://localhost:4000/api/health should report `"mongo":"connected"`.
+
+- The first build takes a while: it installs ffmpeg, yt-dlp and gallery-dl, and the background-removal model (about 150 MB).
+- Optional settings (AI keys for subtitles, limits) go in `server/.env`, copied from `server/.env.example`. Compose reads it if it exists and overrides `MONGO_URI`, `PORT`, `CLIENT_ORIGIN` and `TEMP_DIR` so the containers find each other.
+- Ports: change them with `WEB_PORT=3000 API_PORT=5000 docker compose up --build`. If you change the API port or open the app from another machine, also set `API_BASE_URL` (what the browser uses to reach the API) and `CLIENT_ORIGIN` (the web app's address), e.g. `API_BASE_URL=http://localhost:5000 CLIENT_ORIGIN=http://localhost:3000 docker compose up --build`.
+- Data: MongoDB lives in the `mongo-data` volume and temporary files in `server-tmp`. `docker compose down` keeps them, `docker compose down -v` deletes them.
+- Update yt-dlp (platforms change often): `docker compose build --no-cache server && docker compose up -d`.
+
+## Local development (without Docker)
+
+Requirements:
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Node.js | 22.22.3+ or 24.15+ (Angular 22 needs it) | [nodejs.org](https://nodejs.org) or `nvm install 24` |
+| MongoDB | 6+ | `docker run -d -p 27017:27017 mongo:8.0`, a local install, or a free [Atlas](https://www.mongodb.com/atlas) cluster |
+| ffmpeg + ffprobe | 6+ | macOS `brew install ffmpeg`, Ubuntu `sudo apt install ffmpeg`, Windows `winget install ffmpeg` |
+| yt-dlp | latest | `pip install -U "yt-dlp[default]"` (the `[default]` extra is what lets YouTube work) |
+| gallery-dl | latest | `pip install -U gallery-dl` (image posts and carousels) |
+
+```bash
+# API: http://localhost:4000/api/health
+cd server
+cp .env.example .env        # set MONGO_URI if it isn't localhost
+npm install
+npm run dev
+
+# Web app: http://localhost:4200 (in a second terminal)
 cd client
 npm install
-npm start                   # http://localhost:4200
+npm start
 ```
+
+In development the web app talks to `http://localhost:4000` (`client/src/environments/environment.development.ts`). At startup the API checks yt-dlp, gallery-dl, ffmpeg and ffprobe and logs an install hint for anything missing; `/api/health` shows the same.
+
+## Configuration
+
+### API (`server/.env`)
+
+All settings, with comments, are in [`server/.env.example`](server/.env.example). The ones you usually touch:
+
+| Variable | Default | What it does |
+|----------|---------|--------------|
+| `MONGO_URI` | `mongodb://localhost:27017/snapgrab` | MongoDB connection string (Atlas: `mongodb+srv://...`) |
+| `PORT` | `4000` | API port (Render and Railway set this themselves) |
+| `CLIENT_ORIGIN` | `http://localhost:4200` | Web app address(es) allowed by CORS, comma-separated |
+| `TEMP_DIR` | `./tmp` | Where downloads, uploads and results are written |
+| `MAX_UPLOAD_MB` | `50` | Upload limit for background removal |
+| `MAX_DOWNLOAD_MB` | `500` | Largest file yt-dlp may download |
+| `FILE_TTL_MINUTES` | `60` | How long files are kept before cleanup |
+| `YTDLP_PATH`, `GALLERYDL_PATH`, `FFMPEG_PATH`, `FFPROBE_PATH` | on `PATH` | Point at the binaries if they aren't on `PATH` |
+
+Video tool limits and AI keys are listed under [Server settings for the tools](#server-settings-for-the-tools) and [AI services](#ai-services-optional).
+
+### Web app (build time)
+
+| Variable | What it does |
+|----------|--------------|
+| `API_BASE_URL` | The API address the browser calls. Must be `https` except for `localhost`. Without it, `client/src/environments/environment.ts` is used as committed |
+| `ADSENSE_*`, `ADSTERRA_*`, `ADS_TXT` | Optional ads, see [Ads](#ads-optional) |
+
+These are read by `client/scripts/set-env.mjs`, which runs before every `npm run build`.
+
+## API
+
+All endpoints are under `/api` and answer JSON errors as `{ "error": { "code", "message" } }`.
+
+| Method | Path | What it does |
+|--------|------|--------------|
+| `GET` | `/health` | MongoDB state and which tools are installed |
+| `GET` | `/config` | Public limits and which tools / AI providers are available |
+| `POST` | `/fetch` | `{ url }` → platform, title, thumbnail, duration, formats, carousel items (cached 1 hour) |
+| `POST` | `/download` | `{ url, formatId?, itemIndex?, audioOnly? }` → `{ jobId }` |
+| `POST` | `/download/zip` | `{ url }` → `{ jobId }` for a ZIP of every carousel item |
+| `POST` | `/remove-bg/image` | Multipart upload (`file`, optional `bgImage`) or `{ fileId }`, plus `background` → `{ jobId }` |
+| `POST` | `/media/upload` | Upload a video, audio or image for the tools |
+| `GET` / `DELETE` | `/media/:id` | Media details / delete an upload |
+| `POST` | `/tools/:type` | Start a tool job (`edit`, `convert`, `compress`, `gif`, `frames`, `thumbnail`, `shorts`, `subtitles`, `burn-subtitles`, `creator-pack`) |
+| `GET` | `/jobs/:id` | Status, progress (0-100), stage, error and result files |
+| `POST` | `/jobs/:id/retry` | Retry a failed job |
+| `DELETE` | `/jobs/:id` | Delete a job and its files |
+| `GET` / `DELETE` | `/history` | This browser's jobs / clear them |
+| `GET` | `/files/:id` | Stream a file with `Content-Disposition` (`?inline=1` for previews; supports Range) |
+
+Long-running work (downloads, background removal, video tools) runs as Agenda jobs: start a job, then poll `/jobs/:id` until `status` is `done` or `failed`.
 
 ## Deploying
 
@@ -143,8 +256,20 @@ The background queue is Agenda on the same MongoDB, so no Redis is needed. Video
 ## Tests
 
 ```bash
-cd server && npm test
-cd client && npm test
+cd server && npm test      # API: unit + route tests (one runs the real background-removal model)
+cd client && npm test      # web app
 ```
+
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---------|---------------|
+| `/api/health` shows `"mongo":"disconnected"` or `"degraded"` | `MONGO_URI` is wrong, or Atlas *Network Access* doesn't allow the API's IP (use `0.0.0.0/0` on Render/Railway). The log names the host it tried. |
+| The web app says "Can't reach SnapGrab" | The API is down or `API_BASE_URL` points somewhere else. Open `<API_BASE_URL>/api/health` in the browser. |
+| Browser console shows a CORS error | Add the web app's exact address (scheme + host, no path) to `CLIENT_ORIGIN` and restart the API. `/api/health` lists the allowed origins. |
+| "Server is missing a tool" | yt-dlp, gallery-dl or ffmpeg isn't installed or not on `PATH`; `/api/health` shows which. The Docker image includes all of them. |
+| YouTube links fail while others work | yt-dlp is out of date or was installed without `[default]`. Update it (`pip install -U "yt-dlp[default]"`, or rebuild the Docker image). |
+| A post says "private" | It needs a login. SnapGrab only supports public posts. |
+| Background removal or video tools are very slow | They are CPU-bound. Use an instance with at least 1 CPU and 2 GB RAM, and keep `MEDIA_CONCURRENCY=1`. |
 
 Only download content you own or have permission to use.

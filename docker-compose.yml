@@ -1,0 +1,62 @@
+# SnapGrab on one machine: MongoDB + API + web app.
+#
+#   docker compose up --build
+#   open http://localhost:8080        (API on http://localhost:4000/api/health)
+#
+# Optional settings (AI keys, limits) go in server/.env; see server/.env.example.
+# Everything below overrides those for the parts that must point at the other containers.
+
+name: snapgrab
+
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    # Only reachable from this machine (handy for MongoDB Compass); remove the line to keep it internal.
+    ports:
+      - "127.0.0.1:27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - path: ./server/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      MONGO_URI: mongodb://mongo:27017/snapgrab
+      # The browser loads the app from :8080; ng serve on :4200 also works against this API.
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:8080,http://localhost:4200}
+      TEMP_DIR: /app/tmp
+    volumes:
+      - server-tmp:/app/tmp
+    ports:
+      - "${API_PORT:-4000}:4000"
+
+  client:
+    build:
+      context: ./client
+      args:
+        # The browser calls the API directly, so this must be reachable from your machine.
+        API_BASE_URL: ${API_BASE_URL:-http://localhost:4000}
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  mongo-data:
+  server-tmp:
